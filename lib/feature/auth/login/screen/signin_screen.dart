@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/app_colors.dart';
 import '../../../choose interest/screen/choose_interest_screen.dart';
-import '../../../nav bar/screen/custom_bottom_nav_bar.dart';
 import '../../forget password/screen/forget_password_screen.dart';
 import '../../signup/screen/signup_screen.dart';
 
@@ -64,7 +63,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
-                      "assets/icons/Rectangle.png",
+                      "assets/icons/WhatsApp Image 2025-10-31 at 17.04.52_8ebc47d0.jpg",
                       fit: BoxFit.contain,
                       // Ensures transparent background works
                       errorBuilder: (context, error, stackTrace) {

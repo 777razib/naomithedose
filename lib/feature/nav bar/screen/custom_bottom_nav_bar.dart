@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
 import '../../../core/app_colors.dart';
-import '../../discover/screen/discover_screen.dart';
 import '../../home/screen/home_screen.dart';
-import '../../media/screen/media_screen.dart';          // সঠিক ইমপোর্ট
 import '../../profile/screens/profile_screen.dart';     // সঠিক ইমপোর্ট
-import '../../qr code scanner/controller/qr_code_acanner_api_controller.dart';
-import '../../qr code scanner/screen/QrScannerScreen.dart';
 import '../../search/screen/search_screen.dart';
 
 class CustomBottomNavBar extends StatefulWidget {

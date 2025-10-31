@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:naomithedose/feature/media/audio/screen/audio_list_screen.dart';
+import 'package:naomithedose/feature/media/audio/screen/audio_play.dart';
 
 import 'feature/splash/splash_screen.dart';
 
@@ -17,7 +19,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: Colors.white),
       home: Scaffold(
-        body: SplashScreen(),
+        body: BusinessScreen(),
       ),
     );
   }

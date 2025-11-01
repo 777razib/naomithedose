@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../core/app_colors.dart';
+import '../../account text editing controller/account_text_editing_controller.dart';
 import '../../otp/screen/otp_screen.dart';
+import '../controller/send_email_with_otp_controller.dart';
 
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
@@ -13,7 +15,8 @@ class ForgetPasswordScreen extends StatefulWidget {
 }
 
 class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
-  final TextEditingController emailController = TextEditingController();
+  AccountTextEditingController accountTextEditingController = Get.find<AccountTextEditingController>();
+  ResetPasswordController resetPasswordController = Get.put(ResetPasswordController());
 
 
   // Focus nodes for highlighting on focus
@@ -21,7 +24,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
   @override
   void dispose() {
-    emailController.dispose();
+    accountTextEditingController.emailController.dispose();
     emailFocusNode.dispose();
     super.dispose();
   }
@@ -75,7 +78,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: emailController,
+                controller: accountTextEditingController.emailController,
                 focusNode: emailFocusNode,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -99,9 +102,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Get.to(()=> OtpScreen());
-                  },
+                  onPressed: _otpApiCallMethod,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
@@ -119,5 +120,15 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _otpApiCallMethod()async {
+
+    bool isSuccess=await  resetPasswordController.resetPasswordApiCallMethod();
+    if(isSuccess) {
+      Get.to(() => OtpScreen());
+    }else {
+      Get.snackbar("Error", "Something went wrong");
+    }
   }
 }

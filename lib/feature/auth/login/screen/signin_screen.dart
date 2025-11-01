@@ -1,10 +1,13 @@
+// lib/feature/auth/login/screen/signin_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/app_colors.dart';
 import '../../../choose interest/screen/choose_interest_screen.dart';
-import '../../../nav bar/screen/custom_bottom_nav_bar.dart';
+import '../../account text editing controller/account_text_editing_controller.dart';
 import '../../forget password/screen/forget_password_screen.dart';
 import '../../signup/screen/signup_screen.dart';
+import '../controller/login_controller.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -14,22 +17,26 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  // Get controllers (singleton)
+  final LoginApiRiderController _loginCtrl = Get.put(LoginApiRiderController());
+  final AccountTextEditingController _acctCtrl = Get.find<AccountTextEditingController>();
+
   bool obscurePassword = true;
   bool rememberMe = false;
 
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
 
-  @override
+ /* @override
   void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
+    // Clear text when leaving screen (optional)
+    _acctCtrl.clearAll();
+
+    // Dispose only local FocusNodes
     emailFocusNode.dispose();
     passwordFocusNode.dispose();
     super.dispose();
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +50,7 @@ class _SignInScreenState extends State<SignInScreen> {
             children: [
               const SizedBox(height: 50),
 
-              // Logo with Transparent Background + Shadow
+              // Logo
               Center(
                 child: Container(
                   width: 110,
@@ -64,9 +71,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
-                      "assets/icons/Rectangle.png",
+                      "assets/icons/WhatsApp Image 2025-10-31 at 17.04.52_8ebc47d0.jpg",
                       fit: BoxFit.contain,
-                      // Ensures transparent background works
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(Icons.image, size: 50, color: Colors.grey);
                       },
@@ -95,9 +101,10 @@ class _SignInScreenState extends State<SignInScreen> {
               const Text("Email Address", style: TextStyle(fontSize: 14, color: Colors.black87)),
               const SizedBox(height: 8),
               TextField(
-                controller: emailController,
+                controller: _acctCtrl.emailController,
                 focusNode: emailFocusNode,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
                   hintText: "Enter your email address",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -115,9 +122,10 @@ class _SignInScreenState extends State<SignInScreen> {
               const Text("Password", style: TextStyle(fontSize: 14, color: Colors.black87)),
               const SizedBox(height: 8),
               TextField(
-                controller: passwordController,
+                controller: _acctCtrl.passwordController,
                 focusNode: passwordFocusNode,
                 obscureText: obscurePassword,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: "Enter your password",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -167,13 +175,16 @@ class _SignInScreenState extends State<SignInScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () => Get.to(() => const ChooseInterestScreen()),
+                  onPressed: _apiCallButton,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     elevation: 2,
                   ),
-                  child: const Text("Sign In", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    "Sign In",
+                    style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
 
@@ -202,5 +213,19 @@ class _SignInScreenState extends State<SignInScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _apiCallButton() async {
+    final isSuccess = await _loginCtrl.loginApiRiderMethod();
+    if (isSuccess) {
+      Get.offAll(() => const ChooseInterestScreen()); // Clears navigation stack
+    } else {
+      Get.snackbar(
+        "Login Failed",
+        _loginCtrl.errorMessage ?? "Something went wrong",
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+    }
   }
 }

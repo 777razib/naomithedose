@@ -1,7 +1,7 @@
 // image_widget.dart
 import 'package:flutter/material.dart';
 
-class ImageWidget extends StatelessWidget {
+class VideoImageWidget extends StatelessWidget {
   final String title;
   final String date;
   final String subTitle;
@@ -9,7 +9,7 @@ class ImageWidget extends StatelessWidget {
   final VoidCallback onTap;
 
 
-  const ImageWidget({
+  const VideoImageWidget({
     super.key,
     required this.title,
     required this.date,

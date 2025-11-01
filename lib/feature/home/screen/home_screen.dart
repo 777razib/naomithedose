@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
-import '../widget/ImageWidget.dart';
-import '../widget/video_widget.dart';
+import '../../media/audio/screen/audio_list_screen.dart';
+import '../widget/audio_image_widget.dart';
+import '../widget/video_image_widget.dart';
 import '../widget/view_video_and_details.dart';
 
 class VideoModel {
@@ -21,10 +22,9 @@ class VideoModel {
   });
 }
 
-// Mock API fetch (replace with real API call)
+// Mock API fetch
 Future<List<VideoModel>> fetchVideos(String category) async {
-  await Future.delayed(const Duration(seconds: 1)); // simulate network delay
-  // Replace below with real API response mapping
+  await Future.delayed(const Duration(seconds: 1));
   return [
     VideoModel(
       title: "$category Video 1",
@@ -96,39 +96,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   width: 58,
                   height: 58,
-                  child: Image.asset(
-                    "assets/icons/linly-high-resolution-logo 1.png",
-                  ),
+                  child: Image.asset("assets/icons/linly-high-resolution-logo 1.png"),
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isVideo = !isVideo;
-                    });
-                  },
+                  onTap: () => setState(() => isVideo = !isVideo),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     width: 120,
                     height: 45,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: isVideo ? AppColors.primary : Colors.grey.shade400,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         Align(
-                          alignment: isVideo
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
+                          alignment: isVideo ? Alignment.centerLeft : Alignment.centerRight,
                           child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                            child: const Text(
-                              "Video",
-                              style: TextStyle(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              isVideo ? "Video" : "Audio",
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -138,9 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         AnimatedAlign(
                           duration: const Duration(milliseconds: 300),
-                          alignment: isVideo
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
+                          alignment: isVideo ? Alignment.centerRight : Alignment.centerLeft,
                           child: Container(
                             width: 30,
                             height: 30,
@@ -148,11 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
+                                BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
                               ],
                             ),
                           ),
@@ -165,78 +150,98 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Horizontal buttons + videos
-          Expanded(
-            child: Column(
-              children: [
-                // 🔹 Horizontal Category Buttons
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  height: 45,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final isSelected = selectedIndex == index;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedIndex = index;
-                          });
-                          _loadVideos(categories[index]);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: AppColors.primary, width: 1.5),
-                          ),
-                          child: Center(
-                            child: Text(
-                              categories[index],
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+          // Category Buttons
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            height: 45,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final isSelected = selectedIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => selectedIndex = index);
+                    _loadVideos(categories[index]);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.primary, width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text(
+                        categories[index],
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // 🔹 Show Selected Category Videos
-                Expanded(
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                    itemCount: videos.length,
-                    itemBuilder: (context, i) {
-                      final video = videos[i];
-                      return ImageWidget(
-                        title: video.title,
-                        subTitle: video.subTitle,
-                        date: video.date,
-                        imageUrl: video.videoUrl,
-                        onTap: () {
-                          Get.to(ViewVideoAndDetails());
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+                );
+              },
             ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Content Area: Video = ListView, Audio = GridView
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : isVideo
+                ? _buildVideoList()   // ListView
+                : _buildAudioGrid(),  // GridView
           ),
         ],
       ),
+    );
+  }
+
+  // Video: ListView.builder
+  Widget _buildVideoList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: videos.length,
+      itemBuilder: (context, i) {
+        final video = videos[i];
+        return VideoImageWidget(
+          title: video.title,
+          subTitle: video.subTitle,
+          date: video.date,
+          imageUrl: video.videoUrl, // পরে thumbnail URL দিবে
+          onTap: () => Get.to(() => ViewVideoAndDetails()),
+        );
+      },
+    );
+  }
+
+  // Audio: GridView.builder (2 columns)
+  // In _buildAudioGrid()
+  Widget _buildAudioGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.75, // 327 / ~435 (image + text) → safe ratio
+      ),
+      itemCount: videos.length,
+      itemBuilder: (context, i) {
+        final video = videos[i];
+        return AudioImageWidget(
+          title: video.title,
+          subTitle: video.subTitle,
+          date: video.date,
+          imageUrl: "https://via.placeholder.com/327x144",
+          onTap: () => Get.to(() => BusinessScreen()),
+        );
+      },
     );
   }
 }

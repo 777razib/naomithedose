@@ -1,10 +1,11 @@
 class Urls {
-  static const String _baseUrl = '';
+  static const String _baseUrl = 'http://206.162.244.140:8033';
   static const String baseUrl = '';
-  static const String socketUrl = 'ws://195.200.15.155:5006';
+  static const String socketUrl = '';
   static const String login = '$_baseUrl/auth/login';
-  static const String resetPassword = '$_baseUrl/auth/reset-password';
-  static const String authentication = '$_baseUrl/auth/verify-auth';
+  static const String authSignUp = '$_baseUrl/auth/signup';
+  static const String authForgetSendOtp = '$_baseUrl/auth/forget/send-otp';
+  static const String authFVerifyOtp = '$_baseUrl/auth/forget/verify-otp';
   static const String authValidate = '$_baseUrl/auth/validate';
   static const String logout = '$_baseUrl/auth/logout';
   static const String forgotPass = '$_baseUrl/auth/forgot-password';

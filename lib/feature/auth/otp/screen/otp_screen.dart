@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:naomithedose/feature/auth/account%20text%20editing%20controller/account_text_editing_controller.dart';
 import '../../../../core/app_colors.dart';
 import '../../create new password/screen/create_new_password_screen.dart';
+import '../controller/otp_controller.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -13,12 +15,8 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  static const int _otpLength = 5; // ৫ ডিজিট
-
-  final List<TextEditingController> _controllers =
-  List.generate(_otpLength, (index) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-  List.generate(_otpLength, (index) => FocusNode());
+  final OtpController otpController = Get.put(OtpController());
+  final AccountTextEditingController accountTextEditingController = Get.find<AccountTextEditingController>();
 
   int _secondsRemaining = 60;
   late Timer _timer;
@@ -44,18 +42,14 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void dispose() {
     _timer.cancel();
-    for (var controller in _controllers) controller.dispose();
-    for (var node in _focusNodes) node.dispose();
     super.dispose();
   }
 
   void _onChanged(String value, int index) {
-    if (value.length == 1 && index < _otpLength - 1) {
-      // পরের ফিল্ডে যাও
-      FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
+    if (value.length == 1 && index < AccountTextEditingController.otpLength - 1) {
+      FocusScope.of(context).requestFocus(accountTextEditingController.focusNodes[index + 1]);
     } else if (value.isEmpty && index > 0) {
-      // ব্যাকস্পেসে পিছনে যাও
-      FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
+      FocusScope.of(context).requestFocus(accountTextEditingController.focusNodes[index - 1]);
     }
   }
 
@@ -84,16 +78,11 @@ class _OtpScreenState extends State<OtpScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-
-            // Title
             const Text(
               'Enter OTP',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 10),
-
-            // Description
             RichText(
               textAlign: TextAlign.center,
               text: const TextSpan(
@@ -107,19 +96,19 @@ class _OtpScreenState extends State<OtpScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
 
-            // ৫ টি OTP ফিল্ড
+            // ✅ Use otpInputController (the actual field name)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_otpLength, (index) {
+              children: List.generate(AccountTextEditingController.otpLength, (index) {
                 return SizedBox(
                   width: 56,
                   height: 56,
                   child: TextField(
-                    controller: _controllers[index],
-                    focusNode: _focusNodes[index],
+                    // ✅ Use the operator instead of direct field access
+                    controller: accountTextEditingController[index],
+                    focusNode: accountTextEditingController.focusNodes[index],
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -144,15 +133,10 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
 
             const SizedBox(height: 30),
-
-            // Continue Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Optional: Validate OTP
-                  Get.to(() =>  CreateNewPasswordScreen());
-                },
+                onPressed: apiCallButton,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -165,10 +149,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Timer
             RichText(
               text: TextSpan(
                 style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -181,10 +162,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // Resend Code
             GestureDetector(
               onTap: _secondsRemaining == 0
                   ? () {
@@ -197,7 +175,7 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Didn’t receive code? ", style: TextStyle(color: Colors.grey)),
+                  const Text("Didn't receive code? ", style: TextStyle(color: Colors.grey)),
                   Text(
                     'Resend Code',
                     style: TextStyle(
@@ -212,5 +190,16 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> apiCallButton() async{
+      bool isSuccess=await otpController.otpApiCallMethod();
+  if(isSuccess){
+      // Get the complete OTP using the getOtpString method
+      final otp = accountTextEditingController.getOtpString();
+      print('Entered OTP: $otp');
+      Get.to(() => CreateNewPasswordScreen());
+  }
+
   }
 }

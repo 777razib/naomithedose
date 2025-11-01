@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:naomithedose/core/services_class/shared_preferences_helper.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
+import '../../auth/login/screen/signin_screen.dart';
 import '../controllers/profile_controller.dart';
 import '../widget/about_us_widget.dart';
 import '../widget/privacy_policy_widget.dart';
@@ -304,23 +306,65 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Log Out'),
         content: const Text('Are you sure you want to log out?'),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          // Cancel Button
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+
+          // Log Out Button
           TextButton(
             onPressed: () async {
-              Get.back();
-              final success = await Get.find<ProfileController>().logout();
-              if (success) {
-                Get.snackbar('Success', 'Logged out successfully',
-                    backgroundColor: Colors.green, colorText: Colors.white);
-                Get.offAllNamed('/login'); // Replace with your login route
-              } else {
-                Get.snackbar('Error', 'Logout failed', backgroundColor: Colors.red, colorText: Colors.white);
+              Get.back(); // Close dialog
+
+              // Show loading
+              Get.dialog(
+                const Center(child: CircularProgressIndicator()),
+                barrierDismissible: false,
+              );
+
+              try {
+                final success = await Get.find<ProfileController>().logout();
+
+                if (success) {
+                  // Clear token
+                  await SharedPreferencesHelper.clearAccessToken();
+
+                  // Close loading
+                  Get.back();
+
+                  // Success message
+                  Get.snackbar(
+                    'Success',
+                    'Logged out successfully',
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+
+                  // Navigate to Login
+                  Get.offAll(() => const SignInScreen()); // সঠিক উপায়
+                } else {
+                  throw Exception('Logout failed');
+                }
+              } catch (e) {
+                // Close loading if still open
+                if (Get.isDialogOpen == true) Get.back();
+
+                Get.snackbar(
+                  'Error',
+                  'Logout failed. Please try again.',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
               }
             },
             child: const Text('Log Out', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
+      barrierDismissible: false,
     );
   }
 

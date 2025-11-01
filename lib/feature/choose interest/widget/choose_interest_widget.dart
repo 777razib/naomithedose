@@ -37,7 +37,7 @@ class ChooseInterestWidget extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
+                  Image.network(
                     image,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
@@ -63,9 +63,9 @@ class ChooseInterestWidget extends StatelessWidget {
             child: Center(
               child: Text(
                 text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
+                style:  TextStyle(
+                  color: Color(0xFFFFFFF3),
+                  fontSize: 20,
                   fontWeight: FontWeight.w600,
                   shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                 ),

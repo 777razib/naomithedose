@@ -1,12 +1,12 @@
-/*
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../feature/auth/login/model/rider_model.dart';
+
+import '../../feature/auth/model/user_model.dart';
 
 class AuthController {
   static String? accessToken;
-  static RiderModel? userModel;
+  static UserModel? userModel;
   static String? accessKey;
 
   static const String _userIdKey = 'userId';
@@ -15,7 +15,7 @@ class AuthController {
   static const String _userDataKey = 'user-data';
 
   /// Save token + user model
-  static Future<void> setUserData(String token, RiderModel model) async {
+  static Future<void> setUserData(String token, UserModel model) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, token);
     await prefs.setString(_userDataKey, jsonEncode(model.toJson()));
@@ -37,7 +37,7 @@ class AuthController {
 
     if (userData != null) {
       accessToken = token;
-      userModel = RiderModel.fromJson(jsonDecode(userData));
+      userModel = UserModel.fromJson(jsonDecode(userData));
     }
   }
 
@@ -104,4 +104,3 @@ class AuthController {
     accessKey = null;
   }
 }
-*/

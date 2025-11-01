@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../core/app_colors.dart';
+import '../../account text editing controller/account_text_editing_controller.dart';
 import '../../login/screen/signin_screen.dart';
+import '../controller/sign_up_controller.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,6 +16,9 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AccountTextEditingController accountTextEditingController = Get.put(AccountTextEditingController());
+  final SignUpApiController signUpApiController = Get.put(SignUpApiController());
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -74,6 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
+                controller: accountTextEditingController.firstNameController,
                 decoration: InputDecoration(
                   hintText: "Enter your first name",
                   border: OutlineInputBorder(
@@ -86,6 +92,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your first name';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -96,6 +108,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
+                controller: accountTextEditingController.lastNameController,
                 decoration: InputDecoration(
                   hintText: "Enter your last name",
                   border: OutlineInputBorder(
@@ -108,6 +121,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your last name';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -118,6 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
+                controller: accountTextEditingController.emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: "Enter your email",
@@ -131,6 +151,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    return 'Please enter a valid email address';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -141,6 +170,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
+                controller: accountTextEditingController.passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   hintText: "Enter your password",
@@ -166,6 +196,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  if (value.length < 8) {
+                    return 'Password must be at least 8 characters long';
+                  }
+                  int numCount = value.replaceAll(RegExp(r'[^0-9]'), '').length;
+                  if (numCount < 2) {
+                    return 'Password must contain at least 2 numbers';
+                  }
+                  int lowerCount = value.replaceAll(RegExp(r'[^a-z]'), '').length;
+                  if (lowerCount < 2) {
+                    return 'Password must contain at least 2 lowercase letters';
+                  }
+                  int upperCount = value.replaceAll(RegExp(r'[^A-Z]'), '').length;
+                  if (upperCount < 2) {
+                    return 'Password must contain at least 2 uppercase letters';
+                  }
+                  int specialCount = value.replaceAll(RegExp(r'[a-zA-Z0-9]'), '').length;
+                  if (specialCount < 2) {
+                    return 'Password must contain at least 2 special characters';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -176,6 +231,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
+                controller: accountTextEditingController.confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
                 decoration: InputDecoration(
                   hintText: "Enter your password",
@@ -201,6 +257,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (value != accountTextEditingController.passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 50),
 
@@ -215,7 +280,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: _apiCallButton,
                   child: const Text(
                     "Sign Up",
                     style: TextStyle(
@@ -257,5 +322,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _apiCallButton() async {
+    if (_formKey.currentState!.validate()) {
+      bool isSuccess = await signUpApiController.signUpApiMethod();
+      if (isSuccess) {
+        Get.offAll(SignInScreen());
+      }
+    }
   }
 }

@@ -1,4 +1,3 @@
-/*
 
 import 'dart:convert';
 import 'dart:io';
@@ -7,7 +6,7 @@ import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:logger/logger.dart';
-import '../../feature/auth/login/view/login_view.dart';
+import '../../feature/auth/login/screen/signin_screen.dart';
 import '../services_class/shared_preferences_data_helper.dart';
 
 class NetworkResponse {
@@ -26,7 +25,6 @@ class NetworkResponse {
 
 class NetworkCall {
   static final Logger _logger = Logger();
-
   /// POST Multipart request
   static Future<NetworkResponse> multipartRequest({
     required String url,
@@ -428,6 +426,8 @@ class NetworkCall {
   /// Logout and navigate to login
   static Future<void> _logOut() async {
     await AuthController.dataClear();
-    Get.offAll( LoginView());
+    Get.offAll( SignInScreen());
   }
-}*/
+}
+
+

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
@@ -12,16 +13,15 @@ class ChooseInterestScreen extends StatefulWidget {
 }
 
 class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
-  // API থেকে আসা ডেটা (মক)
   final List<Map<String, dynamic>> interests = [
-    {"id": 1, "name": "Travel", "image": "assets/interests/music.png"},
-    {"id": 2, "name": "Sports", "image": "assets/interests/travel.png"},
-    {"id": 3, "name": "Relationships", "image": "assets/interests/food.png"},
-    {"id": 4, "name": "Science", "image": "assets/interests/sports.png"},
-    {"id": 5, "name": "Geography", "image": "assets/interests/art.png"},
-    {"id": 6, "name": "Mental Health", "image": "assets/interests/tech.png"},
-    {"id": 7, "name": "Art", "image": "assets/interests/tech.png"},
-    {"id": 8, "name": "History", "image": "assets/interests/tech.png"},
+    {"id": 1, "name": "Travel", "image": "https://i.postimg.cc/GpZDNXwj/photo-1613064934056-08a061014f37.jpg"},
+    {"id": 2, "name": "Sports", "image": "https://i.postimg.cc/q7fMHSqy/FINAL-Swimming.webp"},
+    {"id": 3, "name": "Relationships", "image": "https://i.postimg.cc/PJcnzv8Z/ai-generated-man-in-love-gives-a-happy-woman-a-bouquet-of-roses-romantic-couple-on-a-date-on-a-blurr.jpg"},
+    {"id": 4, "name": "Science", "image": "https://i.postimg.cc/TYM6wgGN/istockphoto-200445234-001-612x612.jpg"},
+    {"id": 5, "name": "Geography", "image": "https://i.postimg.cc/pVKSs7MN/geography-scaled.jpg"},
+    {"id": 6, "name": "Mental Health", "image": "https://i.postimg.cc/28641bwT/what-is-a-mental-health-nurse.jpg"},
+    {"id": 7, "name": "Art", "image": "https://i.postimg.cc/YC2qrYz0/istockphoto-526685029-612x612.jpg"},
+    {"id": 8, "name": "History", "image": "https://i.postimg.cc/tCTM9gV0/etty-cleopatra.jpg"},
   ];
 
   final Set<int> selectedIds = {};
@@ -29,12 +29,10 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFFF3),
-
-      // Body
+      backgroundColor: const Color(0xFFFFFFF3),
       body: Column(
         children: [
-          const SizedBox(height:90),
+          const SizedBox(height: 90),
 
           // Title
           const Padding(
@@ -60,7 +58,7 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
 
           const SizedBox(height: 20),
 
-          // GridView - Expanded দিয়ে height fix
+          // GridView
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -97,7 +95,7 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
         ],
       ),
 
-
+      // Continue Button (Only when selected)
       bottomNavigationBar: selectedIds.isNotEmpty
           ? Padding(
         padding: const EdgeInsets.all(16.0),
@@ -111,13 +109,7 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
-              final selectedInterests = interests
-                  .where((e) => selectedIds.contains(e['id']))
-                  .toList();
-
-              Get.to(() => const CustomBottomNavBar());
-            },
+            onPressed: _apiCallButton,
             child: const Text(
               "Continue",
               style: TextStyle(
@@ -130,8 +122,24 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
         ),
       )
           : null,
-
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+
+  Future<void> _apiCallButton() async{
+
+
+
+
+    final selectedInterests = interests
+        .where((e) => selectedIds.contains(e['id']))
+        .toList();
+
+
+    // TODO: Save selected interests (e.g., to GetX controller or SharedPreferences)
+    print("Selected: $selectedInterests");
+
+
+    Get.offAll(() => const CustomBottomNavBar());
+
   }
 }

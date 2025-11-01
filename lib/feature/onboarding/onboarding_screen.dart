@@ -63,7 +63,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               textAlign: TextAlign.center,
             ),
 
-            const Spacer(), // নিচে বাটন পুশ করবে
+            const SizedBox(height: 32),
+
             // Let's Start Button
             SizedBox(
               width: double.infinity,
@@ -92,18 +93,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-            Lottie.asset(
-              'assets/lottie_json/Remix of wave (1).json',
 
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.contain,
-              repeat: true,
-              animate: true,
-              reverse: false,
+            const SizedBox(height: 20),
+
+            // Lottie Animation - Always Running & Inside Column
+            Expanded(
+              child: Lottie.asset(
+                'assets/lottie_json/Remix of wave (1).json',
+                fit: BoxFit.contain,
+                repeat: true,
+                animate: true, // Always running
+              ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 20), // Optional bottom padding
           ],
         ),
       ),

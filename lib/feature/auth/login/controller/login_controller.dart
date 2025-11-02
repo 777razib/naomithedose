@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:naomithedose/core/services_class/shared_preferences_helper.dart';
 import '../../../../core/network_caller/network_config.dart';
 import '../../../../core/network_path/natwork_path.dart';
-import '../../../../core/services_class/shared_preferences_data_helper.dart';
 import '../../account text editing controller/account_text_editing_controller.dart';
 import '../../model/user_model.dart';
 

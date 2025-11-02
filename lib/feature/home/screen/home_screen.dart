@@ -1,47 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
+import '../../choose interest/controller/choose_interest_api_controller.dart';
 import '../../media/audio/screen/audio_list_screen.dart';
 import '../widget/audio_image_widget.dart';
 import '../widget/video_image_widget.dart';
 import '../widget/view_video_and_details.dart';
-
-class VideoModel {
-  final String title;
-  final String subTitle;
-  final String date;
-  final String videoUrl;
-  final String category;
-
-  VideoModel({
-    required this.title,
-    required this.subTitle,
-    required this.date,
-    required this.videoUrl,
-    required this.category,
-  });
-}
-
-// Mock API fetch
-Future<List<VideoModel>> fetchVideos(String category) async {
-  await Future.delayed(const Duration(seconds: 1));
-  return [
-    VideoModel(
-      title: "$category Video 1",
-      subTitle: "Subtitle 1",
-      date: "2025-10-31",
-      videoUrl: "https://www.example.com/video1.mp4",
-      category: category,
-    ),
-    VideoModel(
-      title: "$category Video 2",
-      subTitle: "Subtitle 2",
-      date: "2025-10-31",
-      videoUrl: "https://www.example.com/video2.mp4",
-      category: category,
-    ),
-  ];
-}
+import 'package:intl/intl.dart'; // For date formatting
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,35 +16,68 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ChooseInterestApiController controller = Get.find<ChooseInterestApiController>();
+
   bool isVideo = false;
   int selectedIndex = 0;
   bool isLoading = false;
-  List<VideoModel> videos = [];
 
-  final List<String> categories = [
-    "Business",
-    "Education",
-    "Comedy",
-    "Fiction",
-    "History",
-  ];
+  // Use user's selected interests as categories
+  late List<String> categories;
 
   @override
   void initState() {
     super.initState();
-    _loadVideos(categories[selectedIndex]);
+
+    // Wait for episodes to load, then set categories
+    ever(controller.episodes, (_) {
+      if (controller.episodes.isNotEmpty && categories.isEmpty) {
+        _updateCategories();
+      }
+    });
+
+    // If already loaded
+    if (controller.episodes.isNotEmpty) {
+      _updateCategories();
+    }
   }
 
-  void _loadVideos(String category) async {
-    setState(() {
-      isLoading = true;
-      videos = [];
-    });
-    final result = await fetchVideos(category);
-    setState(() {
-      videos = result;
-      isLoading = false;
-    });
+  void _updateCategories() {
+    // Extract unique podcast titles or use search terms
+    final Set<String> uniqueTitles = {};
+    for (var ep in controller.episodes) {
+      final title = ep.podcast?.titleOriginal ?? "Unknown";
+      uniqueTitles.add(title.split(" ").take(3).join(" ")); // Shorten long titles
+    }
+    categories = uniqueTitles.take(8).toList(); // Limit to 8
+    if (categories.isEmpty) categories = ["All Podcasts"];
+
+    setState(() {});
+
+    // Load first category
+    _loadEpisodesForCategory(categories.first);
+  }
+
+  void _loadEpisodesForCategory(String category) async {
+    setState(() => isLoading = true);
+
+    // Search by category name
+    await controller.chooseInterestApiMethod(interest: category);
+
+    setState(() => isLoading = false);
+  }
+
+  String _formatDate(int? timestampMs) {
+    if (timestampMs == null) return "Unknown";
+    final date = DateTime.fromMillisecondsSinceEpoch(timestampMs);
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  String _formatDuration(int? seconds) {
+    if (seconds == null) return "";
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return "${mins}m ${secs}s";
   }
 
   @override
@@ -119,11 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               isVideo ? "Video" : "Audio",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -136,9 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: const BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
-                              ],
+                              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
                             ),
                           ),
                         ),
@@ -150,19 +142,25 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Category Buttons
-          Container(
+          // Category Buttons (from API)
+          Obx(() => controller.episodes.isEmpty && controller.isLoading.value
+              ? const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: CircularProgressIndicator(),
+          )
+              : Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
             height: 45,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final isSelected = selectedIndex == index;
                 return GestureDetector(
                   onTap: () {
                     setState(() => selectedIndex = index);
-                    _loadVideos(categories[index]);
+                    _loadEpisodesForCategory(categories[index]);
                   },
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -186,62 +184,88 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
+          ),
 
           const SizedBox(height: 10),
 
-          // Content Area: Video = ListView, Audio = GridView
+          // Content
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : isVideo
-                ? _buildVideoList()   // ListView
-                : _buildAudioGrid(),  // GridView
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (controller.errorMessage.value.isNotEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(controller.errorMessage.value),
+                      ElevatedButton(onPressed: controller.retry, child: Text("Retry")),
+                    ],
+                  ),
+                );
+              }
+
+              if (controller.episodes.isEmpty) {
+                return const Center(child: Text("No podcasts found"));
+              }
+
+              return isVideo
+                  ? _buildVideoList()
+                  : _buildAudioGrid();
+            }),
           ),
         ],
       ),
     );
   }
 
-  // Video: ListView.builder
   Widget _buildVideoList() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: videos.length,
+      itemCount: controller.episodes.length,
       itemBuilder: (context, i) {
-        final video = videos[i];
+        final ep = controller.episodes[i];
         return VideoImageWidget(
-          title: video.title,
-          subTitle: video.subTitle,
-          date: video.date,
-          imageUrl: video.videoUrl, // পরে thumbnail URL দিবে
+          title: ep.titleOriginal ?? "No Title",
+          subTitle: ep.podcast?.titleOriginal ?? "",
+          date: _formatDate(ep.pubDateMs),
+          imageUrl: ep.thumbnail ?? ep.image ?? "https://via.placeholder.com/300",
           onTap: () => Get.to(() => ViewVideoAndDetails()),
         );
       },
     );
   }
 
-  // Audio: GridView.builder (2 columns)
-  // In _buildAudioGrid()
   Widget _buildAudioGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75, // 327 / ~435 (image + text) → safe ratio
+    return RefreshIndicator(
+      onRefresh: () => controller.refresh(interest: categories[selectedIndex]),
+      child: GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: controller.episodes.length,
+        itemBuilder: (context, i) {
+          final ep = controller.episodes[i];
+          return AudioImageWidget(
+            title: ep.titleOriginal ?? "Untitled",
+            subTitle: "${_formatDuration(ep.audioLengthSec)} • ${ep.podcast?.publisherOriginal ?? ""}",
+            date: _formatDate(ep.pubDateMs),
+            episodes: "Episodes: 13",
+            imageUrl: ep.thumbnail ?? ep.image ?? "https://via.placeholder.com/327x144",
+            onTap: () {
+              // Pass audio URL to player
+             // Get.to(() => AudioListScreen(id: '${ep.id}',));
+              Get.to(() => AudioListScreen(episodeId: ep.audio ?? ""));
+            },
+          );
+        },
       ),
-      itemCount: videos.length,
-      itemBuilder: (context, i) {
-        final video = videos[i];
-        return AudioImageWidget(
-          title: video.title,
-          subTitle: video.subTitle,
-          date: video.date,
-          imageUrl: "https://via.placeholder.com/327x144",
-          onTap: () => Get.to(() => BusinessScreen()),
-        );
-      },
     );
   }
 }

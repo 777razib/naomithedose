@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
 import '../../nav bar/screen/custom_bottom_nav_bar.dart';
+import '../controller/choose_interest_api_controller.dart';
 import '../widget/choose_interest_widget.dart';
 
 class ChooseInterestScreen extends StatefulWidget {
@@ -13,6 +14,9 @@ class ChooseInterestScreen extends StatefulWidget {
 }
 
 class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
+
+  ChooseInterestApiController chooseInterestApiController = Get.put(ChooseInterestApiController());
+
   final List<Map<String, dynamic>> interests = [
     {"id": 1, "name": "Travel", "image": "https://i.postimg.cc/GpZDNXwj/photo-1613064934056-08a061014f37.jpg"},
     {"id": 2, "name": "Sports", "image": "https://i.postimg.cc/q7fMHSqy/FINAL-Swimming.webp"},
@@ -124,22 +128,79 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
           : null,
     );
   }
-
-  Future<void> _apiCallButton() async{
-
-
-
-
-    final selectedInterests = interests
+ /* Future<void> _apiCallButton() async {
+    // Get selected topic names
+    final List<String> selectedNames = interests
         .where((e) => selectedIds.contains(e['id']))
+        .map((e) => e['name'] as String)
         .toList();
 
+    if (selectedNames.isEmpty) {
+      Get.snackbar("Warning", "Please select at least one topic");
+      return;
+    }
 
-    // TODO: Save selected interests (e.g., to GetX controller or SharedPreferences)
-    print("Selected: $selectedInterests");
+    print("Searching podcasts for: $selectedNames");
 
+    // Combine all selected topics into one search query
+    final String searchQuery = selectedNames.join(' OR '); // e.g., "Travel OR Sports"
 
-    Get.offAll(() => const CustomBottomNavBar());
+    // Show loading
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
 
+    try {
+      // API hit FIRST
+      await chooseInterestApiController.chooseInterestApiMethod(
+        interest: searchQuery,
+      );
+
+      // Check if we have results
+      if (chooseInterestApiController.episodes.isEmpty) {
+        Get.snackbar("No Results", "No podcasts found for your interests.");
+        return;
+      }
+
+      // SUCCESS: API done → NOW navigate
+      Get.offAll(() => const CustomBottomNavBar());
+    } catch (e) {
+      Get.snackbar("Error", "Failed to load podcasts: $e");
+    } finally {
+      // Hide loading
+      if (Get.isDialogOpen == true) Get.back();
+    }
+  }*/
+  // screen/choose_interest_screen.dart (fixed _apiCallButton)
+  Future<void> _apiCallButton() async {
+    final selectedNames = interests
+        .where((e) => selectedIds.contains(e['id']))
+        .map((e) => e['name'] as String)
+        .toList();
+
+    if (selectedNames.isEmpty) {
+      Get.snackbar("Warning", "Select at least one topic");
+      return;
+    }
+
+    final searchQuery = selectedNames.join(' OR ');
+
+    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+
+    try {
+      await chooseInterestApiController.chooseInterestApiMethod(interest: searchQuery);
+
+      if (chooseInterestApiController.episodes.isEmpty) {
+        Get.snackbar("No Results", "Try other topics");
+        return;
+      }
+
+      Get.offAll(() => const CustomBottomNavBar()); // ← NOW WORKS!
+    } catch (e) {
+      Get.snackbar("Error", "Check API key or internet");
+    } finally {
+      if (Get.isDialogOpen == true) Get.back();
+    }
   }
 }

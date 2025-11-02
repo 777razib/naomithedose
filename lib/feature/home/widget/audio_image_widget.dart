@@ -2,10 +2,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/app_colors.dart';
+
 class AudioImageWidget extends StatelessWidget {
   final String? title;
   final String? subTitle;
   final String? date;
+  final String? episodes;
   final String imageUrl;
   final VoidCallback onTap;
 
@@ -16,6 +19,7 @@ class AudioImageWidget extends StatelessWidget {
     this.date,
     required this.imageUrl,
     required this.onTap,
+    this.episodes,
   });
 
   @override
@@ -62,7 +66,7 @@ class AudioImageWidget extends StatelessWidget {
                       ),
                     ),
                     // Play Icon
-                    const Positioned.fill(
+                    /*const Positioned.fill(
                       child: Center(
                         child: Icon(
                           Icons.play_circle_filled,
@@ -70,7 +74,7 @@ class AudioImageWidget extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                    ),
+                    ),*/
                   ],
                 ),
               ),
@@ -110,18 +114,35 @@ class AudioImageWidget extends StatelessWidget {
                       ),
                     const SizedBox(height: 4),
 
-                    // Date
-                    if (date != null && date!.isNotEmpty)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          date!,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
+                    Row(children: [
+// Date
+                      if (episodes != null && episodes!.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            episodes!,
+                            style:  TextStyle(
+                              fontSize: 16,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                      ),
+                      const SizedBox(width: 6),
+
+                      // Date
+                      if (date != null && date!.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            date!,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                    ],
+                    )
                   ],
                 ),
               ),

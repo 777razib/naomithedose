@@ -1,34 +1,35 @@
+// lib/core/network_path/network_path.dart
+
 class Urls {
   static const String _baseUrl = 'http://206.162.244.140:8033';
-  static const String baseUrl = '';
-  static const String socketUrl = '';
+
+  // Keep your auth URLs
   static const String login = '$_baseUrl/auth/login';
   static const String authSignUp = '$_baseUrl/auth/signup';
   static const String authForgetSendOtp = '$_baseUrl/auth/forget/send-otp';
   static const String authFVerifyOtp = '$_baseUrl/auth/forget/verify-otp';
   static const String authForgetResetPassword = '$_baseUrl/auth/forget/reset-password';
-  static const String logout = '$_baseUrl/auth/logout';
-  static const String forgotPass = '$_baseUrl/auth/forgot-password';
-  static const String pickUpLocation = '$_baseUrl/carTransports/ride-plan';
-  static const String carTransportsMyRidePlans = '$_baseUrl/carTransports/my-ride-plans';
-  static const String carTransportsMyRidesPending = '$_baseUrl/carTransports/my-rides-pending';
-  static const String carTransportsCreate = '$_baseUrl/carTransports/create';
-  static const String paymentsCreateCard = '$_baseUrl/payments/create-card';
-  static const String paymentsSavedCards = '$_baseUrl/payments/saved-cards';
-  static const String paymentsCardPayment = '$_baseUrl/payments/card-payment';
-  static const String reviewsCreate = '$_baseUrl/reviews/create';
-  static  String carTransportsSingle(String id) => '$_baseUrl/carTransports/single/$id';
-  static  String usersDeleteAccount(String id) => '$_baseUrl/users/delete-account/$id';
-  static  String riderRideCancel(String id) => '$_baseUrl/carTransports/$id/cancel';
-  static  String carTransportsCompleted(String id) => '$_baseUrl/carTransports/$id/completed';
 
+  // FIXED: Direct to ListenNotes
+  static String chooseInterest({
+    required String interest,
+    int page = 1,
+    int pageSize = 10,
+  }) {
+    final int offset = (page - 1) * pageSize;
+    final String query = Uri.encodeComponent(interest.trim());
+
+    return '$_baseUrl/podcasts'
+        '?q=$query'
+        '&type=episode'
+        '&language=English'
+        '&len_min=5'      // ← Real episodes
+        '&len_max=120'
+        '&offset=$offset'
+        '&limit=$pageSize';
+  }
   static String getCalendar(String date, String locationUuid) =>
       '$_baseUrl/calendar?date=$date&pickup_location_uuid=$locationUuid';
 
   static const String googleApiKey = "AIzaSyC7AoMhe2ZP3iHflCVr6a3VeL0ju0bzYVE";
-
-
 }
-
-
-

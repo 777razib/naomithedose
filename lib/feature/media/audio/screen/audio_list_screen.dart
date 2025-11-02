@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:naomithedose/feature/media/audio/screen/audio_play.dart';
 
-class BusinessScreen extends StatelessWidget {
-  const BusinessScreen({super.key});
+class AudioListScreen extends StatelessWidget {
+   AudioListScreen({super.key, required this.episodeId});
+  final String episodeId;
 
   @override
   Widget build(BuildContext context) {

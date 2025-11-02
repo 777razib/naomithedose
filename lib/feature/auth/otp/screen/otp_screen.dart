@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:naomithedose/feature/auth/account%20text%20editing%20controller/account_text_editing_controller.dart';
 import '../../../../core/app_colors.dart';
 import '../../create new password/screen/create_new_password_screen.dart';
+import '../../forget password/controller/send_email_with_otp_controller.dart';
 import '../controller/otp_controller.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final OtpController otpController = Get.put(OtpController());
+  ResetPasswordController resetPasswordController = Get.find<ResetPasswordController>();
+
   final AccountTextEditingController accountTextEditingController = Get.find<AccountTextEditingController>();
 
   int _secondsRemaining = 60;
@@ -176,11 +179,14 @@ class _OtpScreenState extends State<OtpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text("Didn't receive code? ", style: TextStyle(color: Colors.grey)),
-                  Text(
-                    'Resend Code',
-                    style: TextStyle(
-                      color: _secondsRemaining == 0 ? AppColors.primary : Colors.grey,
-                      fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: resendOtpApiCallMethod,
+                    child: Text(
+                      'Resend Code',
+                      style: TextStyle(
+                        color: _secondsRemaining == 0 ? AppColors.primary : Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -201,5 +207,15 @@ class _OtpScreenState extends State<OtpScreen> {
       Get.to(() => CreateNewPasswordScreen());
   }
 
+  }
+
+  Future<void> resendOtpApiCallMethod()async {
+    bool isSuccess=await  resetPasswordController.resetPasswordApiCallMethod();
+    if(isSuccess) {
+      Get.snackbar("Success", "OTP sent successfully");
+     /// Get.to(() => OtpScreen());
+    }else {
+      Get.snackbar("Error", "Something went wrong");
+    }
   }
 }

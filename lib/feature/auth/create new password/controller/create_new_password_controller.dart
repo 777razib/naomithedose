@@ -1,81 +1,78 @@
-/*
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controller_AccountTextEditingController/AccountTextEditingController.dart';
+import '../../../../core/network_caller/network_config.dart';
+import '../../../../core/network_path/natwork_path.dart';
+import '../../account text editing controller/account_text_editing_controller.dart';
 
 class AddNewPassword extends GetxController {
   String? _errorMessage;
+  String? _successMessage;  // ✅ Add success message
   String? get errorMessage => _errorMessage;
+  String? get successMessage => _successMessage;
 
-  UserModel? userModel;
-
-  final DataHelperController dataHelperController = Get.put(DataHelperController());
-  final AccountTextEditingController accountTextEditingController = Get.put(AccountTextEditingController());
-
-  /// ✅ Set email from previous step
-  void setEmail(String email) {
-    userModel = UserModel(email: email);
-  }
+  final AccountTextEditingController accountTextEditingController = Get.find<AccountTextEditingController>();
 
   Future<bool> addNewPasswordApiCallMethod() async {
     bool isSuccess = false;
+    _errorMessage = null;
+    _successMessage = null;
 
-    final email = userModel?.email?.trim();
-    final changePasswordText = accountTextEditingController.passwordController.text;
-
-    debugPrint("📧 Email: $email");
-    debugPrint("🔢 OTP: $changePasswordText");
+    final email = accountTextEditingController.emailController.text.trim();
+    final newPassword = accountTextEditingController.newPasswordController.text;
+    final confirmPassword = accountTextEditingController.confirmPasswordController.text;
 
     // Validation
-    if (email == null || email.isEmpty) {
+    if (email.isEmpty) {
       _errorMessage = "Email is missing.";
       update();
       return false;
     }
 
-    if (changePasswordText.isEmpty || changePasswordText == null) {
-      Get.snackbar("Error", "Invalid OTP format");
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+      _errorMessage = "Please fill both password fields.";
+      update();
+      return false;
+    }
+
+    if (newPassword != confirmPassword) {
+      _errorMessage = "Passwords do not match.";
+      update();
+      return false;
+    }
+
+    if (newPassword.length < 8) {
+      _errorMessage = "Password must be at least 8 characters.";
+      update();
       return false;
     }
 
     try {
       Map<String, dynamic> mapBody = {
         "email": email,
-        "password": changePasswordText,
+        "new_password": newPassword,
+        "confirm_password": confirmPassword,
       };
 
-      debugPrint("📤 Sending request to ${NetworkPath.resetPassword}");
-      debugPrint("📦 Payload: $mapBody");
-
       final NetworkResponse response = await NetworkCall.postRequest(
-        url: NetworkPath.resetPassword,
+        url: Urls.authForgetResetPassword,
         body: mapBody,
       );
 
-      debugPrint("📥 RESPONSE Status: ${response.statusCode}");
-      debugPrint("📥 RESPONSE Body: ${response.responseData}");
-
       if (response.isSuccess) {
-        final data = response.responseData?['data'];
-        final token = dataHelperController.accessToken ?? '';
-        print("====$token");
-
-        final updatedUser = UserModel.fromJson(data);
-        await dataHelperController.saveUserData(token, updatedUser);
-        await dataHelperController.getUserData();
-
+        _successMessage = response.responseData?['message'] ?? "Password reset successful.";
         isSuccess = true;
-        _errorMessage = null;
       } else {
-        _errorMessage = response.responseData?['message'] ?? "Unknown error";
+        _errorMessage = response.responseData?['message'] ??
+            response.responseData?['detail'] ??
+            "Failed to reset password.";
       }
     } catch (e) {
-      _errorMessage = "Something went wrong: $e";
-      debugPrint("❌ OTP Exception: $e");
+      _errorMessage = "Network error: $e";
+      debugPrint("❌ Reset Exception: $e");
     }
 
     update();
     return isSuccess;
   }
-}*/
+}

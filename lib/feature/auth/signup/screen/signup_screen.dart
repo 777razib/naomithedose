@@ -16,7 +16,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  final AccountTextEditingController accountTextEditingController = Get.put(AccountTextEditingController());
+  final AccountTextEditingController accountTextEditingController = Get.find<AccountTextEditingController>();
   final SignUpApiController signUpApiController = Get.put(SignUpApiController());
 
   bool _obscurePassword = true;

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:naomithedose/feature/auth/account%20text%20editing%20controller/account_text_editing_controller.dart';
 
 import '../../../../core/app_colors.dart';
 import '../../widget/dialog_screen.dart';
+import '../controller/create_new_password_controller.dart';
 
 class CreateNewPasswordScreen extends StatefulWidget {
   @override
@@ -10,6 +13,10 @@ class CreateNewPasswordScreen extends StatefulWidget {
 }
 
 class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
+
+  final AccountTextEditingController accountTextEditingController=Get.find<AccountTextEditingController>();
+  final AddNewPassword addNewPassword=Get.put(AddNewPassword());
+
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -77,6 +84,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
             SizedBox(height: 8),
             TextField(
               obscureText: _obscureNewPassword,
+              controller: accountTextEditingController.newPasswordController,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(  // Blue on focus
                   borderRadius: BorderRadius.circular(8),
@@ -109,6 +117,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
             SizedBox(height: 8),
             TextField(
               obscureText: _obscureConfirmPassword,
+              controller: accountTextEditingController.confirmPasswordController,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(  // Blue on focus
                   borderRadius: BorderRadius.circular(8),
@@ -138,7 +147,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _showSuccessDialog,
+                onPressed: _apiCallMethod,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -153,5 +162,16 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _apiCallMethod() async {
+    bool isSuccess = await addNewPassword.addNewPasswordApiCallMethod();
+
+    if (isSuccess) {
+      _showSuccessDialog();
+    } else {
+      Get.snackbar('Error', addNewPassword.errorMessage ?? 'Try again',
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
   }
 }

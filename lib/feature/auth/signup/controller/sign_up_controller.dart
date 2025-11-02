@@ -43,11 +43,11 @@ class SignUpApiController extends GetxController {
       debugPrint("Signup Response: ${response.responseData}");
 
       if (response.isSuccess) {
-        var token = response.responseData!["data"]["token"];
+       /* var token = response.responseData!["data"]["token"];
         userModel = UserModel.fromJson(response.responseData!["data"]["newUser"]);
 
         await AuthController.setUserData(token, userModel!);
-        await AuthController.getUserData();
+        await AuthController.getUserData();*/
 
         _errorMessage = null;
         isSuccess = true;

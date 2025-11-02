@@ -11,6 +11,7 @@ class AccountTextEditingController extends GetxController {
   final rollController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final newPasswordController = TextEditingController();
 
   // ✅ Renamed to avoid conflicts
   final List<TextEditingController> otpControllersList = List.generate(otpLength, (index) => TextEditingController());
@@ -55,7 +56,7 @@ class AccountTextEditingController extends GetxController {
     });
   }
 
-  @override
+ /* @override
   void onClose() {
     firstNameController.dispose();
     lastNameController.dispose();
@@ -79,5 +80,5 @@ class AccountTextEditingController extends GetxController {
     dateOfBirthController.dispose();
     fcmTokenController.dispose();
     super.onClose();
-  }
+  }*/
 }

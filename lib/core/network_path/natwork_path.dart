@@ -6,7 +6,7 @@ class Urls {
   static const String authSignUp = '$_baseUrl/auth/signup';
   static const String authForgetSendOtp = '$_baseUrl/auth/forget/send-otp';
   static const String authFVerifyOtp = '$_baseUrl/auth/forget/verify-otp';
-  static const String authValidate = '$_baseUrl/auth/validate';
+  static const String authForgetResetPassword = '$_baseUrl/auth/forget/reset-password';
   static const String logout = '$_baseUrl/auth/logout';
   static const String forgotPass = '$_baseUrl/auth/forgot-password';
   static const String pickUpLocation = '$_baseUrl/carTransports/ride-plan';

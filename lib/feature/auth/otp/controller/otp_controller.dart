@@ -13,11 +13,11 @@ class OtpController extends GetxController {
 
   //UserModel? userModel;
 
- // final DataHelperController dataHelperController = Get.put(DataHelperController());
+  // final DataHelperController dataHelperController = Get.put(DataHelperController());
   final AccountTextEditingController accountTextEditingController = Get.put(AccountTextEditingController());
 
   /// ✅ Set email from previous step
- /* void setEmail(String email) {
+  /* void setEmail(String email) {
     userModel = UserModel(email: email);
   }*/
 
@@ -25,19 +25,22 @@ class OtpController extends GetxController {
     bool isSuccess = false;
 
     final email = accountTextEditingController.emailController.text.trim();
-    final otpText = accountTextEditingController.otpControllersList;
+    final otpControllers = accountTextEditingController.otpControllersList;
 
     debugPrint("📧 Email: $email");
+
+    // Extract OTP as a concatenated string from the list of controllers
+    String otpText = otpControllers.map((controller) => controller.text.trim()).join('');
     debugPrint("🔢 OTP: $otpText");
 
     // Validation
-    if (email == null || email.isEmpty) {
+    if (email.isEmpty) {
       _errorMessage = "Email is missing.";
       update();
       return false;
     }
 
-    if (otpText.isEmpty ) {
+    if (otpText.isEmpty || otpText.length != otpControllers.length) {  // Assuming one digit per controller
       Get.snackbar("Error", "Invalid OTP format");
       return false;
     }
@@ -45,8 +48,7 @@ class OtpController extends GetxController {
     try {
       Map<String, dynamic> mapBody = {
         "email": email,
-        "otp": otpText,
-        //"otp": int.parse(otpText),
+        "otp": otpText,  // Send as string
       };
 
       debugPrint("📤 Sending request to ${Urls.authFVerifyOtp}");
@@ -63,18 +65,25 @@ class OtpController extends GetxController {
       if (response.isSuccess) {
         final data = response.responseData?['data'];
 
-        final token = response.responseData!["access_token"];
+       /* final token = response.responseData!["access_token"];
         print("====$token");
 
         final updatedUser = UserModel.fromJson(data);
         await AuthController.setUserData(token, updatedUser);
         await SharedPreferencesHelper.saveAccessToken(token);
-        await AuthController.getUserData();
+        await AuthController.getUserData();*/
 
         isSuccess = true;
         _errorMessage = null;
       } else {
-        _errorMessage = response.responseData?['message'] ?? "Unknown error";
+        final detail = response.responseData?['detail'];
+        if (detail is String) {
+          _errorMessage = detail;
+        } else if (detail is List) {
+          _errorMessage = detail.map((e) => e['msg'] as String).join('\n');
+        } else {
+          _errorMessage = "Unknown error";
+        }
       }
     } catch (e) {
       _errorMessage = "Something went wrong: $e";

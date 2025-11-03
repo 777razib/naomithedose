@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
 import '../../choose interest/controller/choose_interest_api_controller.dart';
-import '../../media/audio/screen/audio_list_screen.dart';
+import '../../media/audio/screen/audio_play.dart';
 import '../widget/audio_image_widget.dart';
 import '../widget/video_image_widget.dart';
 import '../widget/view_video_and_details.dart';
@@ -259,9 +259,20 @@ class _HomeScreenState extends State<HomeScreen> {
             episodes: "Episodes: 13",
             imageUrl: ep.thumbnail ?? ep.image ?? "https://via.placeholder.com/327x144",
             onTap: () {
+
+              final List<String> nearbyEpisodeIds = [ep.id.toString()]; // খালি রাখো না!
+
+              if (nearbyEpisodeIds.isEmpty) {
+                Get.to(() => MusicPlayerScreen(Id: ep.id.toString())); // পুরানো সিঙ্গেল Id ওয়ে
+              } else {
+                Get.to(() => MusicPlayerScreen(
+                  episodeIds: nearbyEpisodeIds,
+                  currentId: ep.id.toString(),
+                ));
+              }
               // Pass audio URL to player
-             // Get.to(() => AudioListScreen(id: '${ep.id}',));
-              Get.to(() => AudioListScreen(episodeId: ep.audio ?? ""));
+             //Get.to(() => MusicPlayerScreen(Id: '${ep.id}',));
+              //Get.to(() => AudioListScreen(episodeId: ep.audio ?? ""));
             },
           );
         },

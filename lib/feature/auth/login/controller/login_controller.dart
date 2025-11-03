@@ -41,8 +41,7 @@ class LoginApiRiderController extends GetxController {
         //UserModel userModel =  UserModel.fromJson(response.responseData!['data']);
         await SharedPreferencesHelper.saveAccessToken(token);
         await SharedPreferencesHelper.saveUserEmail( userTextEditingController.emailController.text);
-
-       // await AuthController.setUserData(token, userModel);
+       // await SharedPreferencesHelper.saveUserId(data['data']['id']); // await AuthController.setUserData(token, userModel);
 
         _errorMessage = null;
         isSuccess = true;

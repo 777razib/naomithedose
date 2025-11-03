@@ -1,21 +1,81 @@
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'dart:math' as math;
 
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
 import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
+import '../controller/audio_paly_api_controller.dart';
+import '../controller/audio_summary_api_controller.dart';
 
 const kTeal = Color(0xFF39CCCC);
 
 class MusicPlayerScreen extends StatefulWidget {
-  const MusicPlayerScreen({super.key});
+  const MusicPlayerScreen({
+    super.key,
+    this.episodeIds,
+    this.currentId,
+    this.Id,
+  });
+
+  final List<String>? episodeIds;
+  final String? currentId;
+  final String? Id;
 
   @override
   State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  double _progress = 0.4; // 0..1
-  final int _totalSeconds = 4 * 60 + 20; // 4:20
+  late final AudioPlayApiController audioPlayApiController;
+  final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
+
+  String currentEpisodeId = '';
+  int currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    audioPlayApiController = Get.isRegistered<AudioPlayApiController>()
+        ? Get.find<AudioPlayApiController>()
+        : Get.put(AudioPlayApiController());
+
+    String id = widget.Id ?? widget.currentId ?? widget.episodeIds?.firstOrNull ?? '';
+    if (id.isEmpty && widget.episodeIds != null && widget.episodeIds!.isNotEmpty) {
+      currentIndex = widget.episodeIds!.indexOf(widget.currentId ?? '');
+      if (currentIndex == -1) currentIndex = 0;
+      id = widget.episodeIds![currentIndex];
+    }
+
+    if (id.isNotEmpty) {
+      currentEpisodeId = id;
+      _loadEpisode(id);
+    } else {
+      Get.back();
+    }
+  }
+
+  Future<void> _loadEpisode(String id) async {
+    if (id.isEmpty) return;
+    currentEpisodeId = id;
+    print('Loading Episode ID: $id');
+    await audioPlayApiController.audioPlayApiMethod(id);
+  }
+
+  Future<void> _playNext() async {
+    final ids = widget.episodeIds ?? [];
+    if (ids.isEmpty || currentIndex >= ids.length - 1) return;
+    currentIndex++;
+    await _loadEpisode(ids[currentIndex]);
+  }
+
+  Future<void> _playPrevious() async {
+    final ids = widget.episodeIds ?? [];
+    if (ids.isEmpty || currentIndex <= 0) return;
+    currentIndex--;
+    await _loadEpisode(ids[currentIndex]);
+  }
 
   String _format(int seconds) {
     final m = seconds ~/ 60;
@@ -25,183 +85,180 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentSeconds = (_totalSeconds * _progress).round();
-
     return Scaffold(
       backgroundColor: const Color(0xffFFFFF3),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back button
-              CustomAppBar(title:   
-                const Text(
-                  '',
-                  
-                ),
-              ),
-
-              // Remove extra space here
+              const CustomAppBar(title: Text('')),
               const SizedBox(height: 5),
 
-              // Main content (no center alignment)
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Album Art
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/images/podcast1.png',
-                        width: 300,
-                        height: 320,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 250,
-                          height: 250,
-                          alignment: Alignment.center,
-                          color: kTeal.withOpacity(0.12),
-                          child: const Icon(Icons.image_not_supported, color: kTeal),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Obx(() => audioPlayApiController.isLoading.value
+                          ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(color: kTeal),
+                      )
+                          : const SizedBox()),
+                      Obx(() => audioPlayApiController.errorMessage.value != null
+                          ? Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          audioPlayApiController.errorMessage.value!,
+                          style: const TextStyle(color: Colors.red, fontSize: 16),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ),
+                      )
+                          : const SizedBox()),
 
-                    const SizedBox(height: 30),
-
-                    // Song title, artist, and menu icon
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Title & subtitle (left-aligned)
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'The Next Big Move',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'By Tanishk Bagchi',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Obx(() {
+                          final item = audioPlayApiController.chooseInterestItem.value;
+                          final imageUrl = item?.image ?? '';
+                          return Image.network(
+                            imageUrl,
+                            width: 300,
+                            height: 320,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                width: 300,
+                                height: 320,
+                                color: kTeal.withOpacity(0.12),
+                                child: const Center(child: CircularProgressIndicator(color: kTeal)),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 300,
+                              height: 320,
+                              color: kTeal.withOpacity(0.12),
+                              child: const Icon(Icons.image_not_supported, size: 80, color: kTeal),
                             ),
-                          ),
-
-                          // Menu icon from assets
-                         IconButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PodcastDescriptionScreen()),
-    );
-  },
-  icon: Image.asset(
-    'assets/icons/menu.png',
-    width: 26,
-    height: 26,
-    color: kTeal, // tint
-  ),
-),
-
-                        ],
+                          );
+                        }),
                       ),
-                    ),
 
-                    const SizedBox(height: 80),
+                      const SizedBox(height: 30),
 
-                    // Waveform ("bits") progress bar
-                    Column(
-                      children: [
-                        WaveformProgressBar(
-                          progress: _progress,
-                          onChanged: (p) => setState(() => _progress = p),
-                          barCount: 80,
-                          preferredBarWidth: 3,
-                          gap: 2,
-                          maxBarHeight: 48,
-                          activeColor: kTeal,
-                          inactiveColor: kTeal.withOpacity(0.25),
-                          thumbRadius: 7,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Row(
                           children: [
-                            Text(_format(currentSeconds),
-                                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                            Text(_format(_totalSeconds),
-                                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            Expanded(
+                              child: Obx(() {
+                                final item = audioPlayApiController.chooseInterestItem.value;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item?.titleOriginal ?? 'Loading...',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      item?.podcast?.titleOriginal ?? 'Unknown Podcast',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.grey, fontSize: 16),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            Obx(() => Visibility(
+                              visible: audioSummaryApiController.isLoading.value == false,
+                              replacement: const Center(
+                                child: Text(
+                                  "Please wait...",
+                                  style: TextStyle(color: Colors.red, fontSize: 14),
+                                ),
+                              ),
+                              child: IconButton(
+                                onPressed: audioSummaryApiController.isLoading.value ? null : _summaryApiMethod, // Disable button while loading
+                                icon: Image.asset(
+                                  'assets/icons/menu.png',
+                                  width: 26,
+                                  height: 26,
+                                  color: kTeal,
+                                ),
+                              ),
+                            )),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
 
-                    const SizedBox(height: 50),
+                      const SizedBox(height: 40),
 
-                    // Control buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: Image.asset(
-                            'assets/icons/shuffle.png',
-                            width: 26,
-                            height: 26,
-                            color: kTeal,
+                      Obx(() {
+                        final durSec = audioPlayApiController.duration.value.inSeconds;
+                        final posSec = audioPlayApiController.position.value.inSeconds;
+                        final progress = durSec > 0 ? posSec / durSec : 0.0;
+
+                        return Column(
+                          children: [
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 80),
+                              child: WaveformProgressBar(
+                                progress: progress,
+                                onChanged: audioPlayApiController.seekTo,
+                                barCount: 80,
+                                preferredBarWidth: 3,
+                                gap: 2,
+                                maxBarHeight: 48,
+                                activeColor: kTeal,
+                                inactiveColor: kTeal.withOpacity(0.25),
+                                thumbRadius: 7,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_format(posSec), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(_format(durSec), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        );
+                      }),
+
+                      const SizedBox(height: 50),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/shuffle.png', width: 26, height: 26, color: kTeal)),
+                          IconButton(onPressed: _playPrevious, icon: const Icon(Icons.skip_previous, size: 30, color: kTeal)),
+                          Container(
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: kTeal, width: 2)),
+                            child: IconButton(
+                              onPressed: audioPlayApiController.togglePlayPause,  // <--- Play/Pause কাজ করবে
+                              icon: Obx(() => Icon(
+                                audioPlayApiController.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                                size: 30,
+                                color: kTeal,
+                              )),
+                              padding: const EdgeInsets.all(12),
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.skip_previous, size: 30, color: kTeal),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: kTeal, width: 2),
-                          ),
-                          child: IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.pause, size: 30, color: kTeal),
-                            padding: const EdgeInsets.all(12),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.skip_next, size: 30, color: kTeal),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Image.asset(
-                            'assets/icons/repeat.png',
-                            width: 26,
-                            height: 26,
-                            color: kTeal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          IconButton(onPressed: _playNext, icon: const Icon(Icons.skip_next, size: 30, color: kTeal)),
+                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/repeat.png', width: 26, height: 26, color: kTeal)),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -210,11 +267,29 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       ),
     );
   }
+
+  Future<void> _summaryApiMethod() async {
+    final item = audioPlayApiController.chooseInterestItem.value;
+    if (item?.audio == null || item!.audio!.isEmpty) {
+      Get.snackbar("Error", "No audio URL found");
+      return;
+    }
+
+    String audioUrl = item.audio!;
+    print("-------$audioUrl");
+
+    bool isSuccess = await audioSummaryApiController.audioSummaryApiController(audioUrl);
+
+    if (isSuccess) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => PodcastDescriptionScreen(urls: audioUrl,)));
+    } else {
+      String error = audioSummaryApiController.errorMessage ?? "Failed to generate summary";
+      Get.snackbar("Error", error, backgroundColor: Colors.red, colorText: Colors.white);
+    }
+  }
 }
 
-/// A seekable waveform-style progress bar made of vertical bars.
-/// - `progress` is 0..1
-/// - Tap or drag to seek
+// WaveformProgressBar
 class WaveformProgressBar extends StatelessWidget {
   const WaveformProgressBar({
     super.key,
@@ -231,7 +306,6 @@ class WaveformProgressBar extends StatelessWidget {
 
   final double progress;
   final ValueChanged<double> onChanged;
-
   final int barCount;
   final double preferredBarWidth;
   final double gap;
@@ -240,7 +314,6 @@ class WaveformProgressBar extends StatelessWidget {
   final Color inactiveColor;
   final double thumbRadius;
 
-  // Deterministic pseudo-wave heights
   List<double> _sampleHeights() {
     final List<double> h = [];
     for (int i = 0; i < barCount; i++) {
@@ -261,9 +334,7 @@ class WaveformProgressBar extends StatelessWidget {
         final totalWidth = c.maxWidth;
         final double barWidth = (totalWidth - gap * (barCount - 1)) / barCount;
         final bars = _sampleHeights();
-        final activeCount = (progress * barCount)
-            .clamp(0, barCount.toDouble())
-            .floor();
+        final activeCount = (progress * barCount).clamp(0, barCount.toDouble()).floor();
 
         void _seekFromDx(double dx) {
           final p = (dx / totalWidth).clamp(0.0, 1.0);
@@ -277,7 +348,6 @@ class WaveformProgressBar extends StatelessWidget {
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [
-              // Bars
               Row(
                 children: List.generate(barCount, (i) {
                   final h = bars[i] * maxBarHeight;
@@ -295,7 +365,6 @@ class WaveformProgressBar extends StatelessWidget {
                   );
                 }),
               ),
-              // Thumb indicator (small circle)
               Positioned(
                 left: (totalWidth * progress) - thumbRadius,
                 child: Container(

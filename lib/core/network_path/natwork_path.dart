@@ -9,6 +9,17 @@ class Urls {
   static const String authForgetSendOtp = '$_baseUrl/auth/forget/send-otp';
   static const String authFVerifyOtp = '$_baseUrl/auth/forget/verify-otp';
   static const String authForgetResetPassword = '$_baseUrl/auth/forget/reset-password';
+  static   String singleAudio(String id) => '$_baseUrl/episode/$id?show_transcript=1';
+  static String searchingText(String url,String text){
+    final encoded=Uri.encodeComponent(url);
+    return '$_baseUrl/search-any-topic?audio_url=$encoded&topic=$text';
+  }
+// network_path.dart
+  static String audioSummary(String audioUrl) {
+    final encoded = Uri.encodeComponent(audioUrl);
+    return "$_baseUrl/episode/transcribe?audio_url=$encoded";
+  }
+
 
   // FIXED: Direct to ListenNotes
   static String chooseInterest({

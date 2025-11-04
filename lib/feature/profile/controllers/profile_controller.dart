@@ -1,110 +1,117 @@
-// controllers/profile_controller.dart
+// lib/feature/profile/controllers/profile_controller.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/Get.dart';
+import 'package:naomithedose/core/network_caller/network_config.dart';
+import 'package:naomithedose/core/services_class/shared_preferences_helper.dart';
+import '../../../core/network_path/natwork_path.dart';
+import '../../auth/login/screen/signin_screen.dart';
+import '../../auth/model/user_model.dart';
 
-/// User Profile Model
-class UserProfile {
-  final String fullName;
-  final String email;
-  final String profileImage;
-
-  UserProfile({
-    this.fullName = '',
-    this.email = '',
-    this.profileImage = '',
-  });
-
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      fullName: json['fullName'] ?? '',
-      email: json['email'] ?? '',
-      profileImage: json['profileImage'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'fullName': fullName,
-    'email': email,
-    'profileImage': profileImage,
-  };
-}
-
-/// Profile Controller
-class ProfileController extends GetxController {
-  // Reactive Variables
-  final Rx<UserProfile> userProfile = UserProfile().obs;
+class ProfileApiController extends GetxController {
+  final Rx<UserModel> userProfile = UserModel().obs;
   final RxBool isLoading = false.obs;
-  final RxBool pushNotificationEnabled = true.obs;
+  final RxString errorMessage = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
-    getProfile(); // Auto load on screen open
+    // getProfile(); // ← API কল হবে না
   }
 
-  /// Fetch Profile (API or Mock)
   Future<void> getProfile() async {
     isLoading.value = true;
+    errorMessage.value = '';
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Replace with real API call
-      final mockData = {
-        'fullName': 'John Doe',
-        'email': 'john.doe@example.com',
-        'profileImage': 'https://i.pravatar.cc/150?u=john',
-      };
-
-      userProfile.value = UserProfile.fromJson(mockData);
+      final response = await NetworkCall.getRequest(url: Urls.getUserDataUrl);
+      if (response.isSuccess) {
+        final data = response.responseData?['data'] ?? response.responseData ?? {};
+        userProfile.value = UserModel.fromJson(data);
+      } else {
+        errorMessage.value = response.errorMessage ?? 'Failed to load profile';
+        if (response.statusCode == 401) Get.offAllNamed('/login');
+      }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to load profile: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      errorMessage.value = 'Network error: $e';
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Update Push Notification Toggle
-  void setPushNotification(bool value) {
-    pushNotificationEnabled.value = value;
-    // TODO: Save to API or local storage
-    Get.snackbar(
-      'Updated',
-      'Push notifications ${value ? 'enabled' : 'disabled'}',
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-    );
-  }
-
-  /// Logout User
-  Future<bool> logout() async {
+  Future<bool> editProfile({
+    required String firstName,
+    required String lastName,
+    String? profileImagePath,
+  }) async {
+    isLoading.value = true;
     try {
-      isLoading.value = true;
-      await Future.delayed(const Duration(seconds: 1));
-      // TODO: Call real logout API
-      return true;
+      final Map<String, String> fields = {
+        'first_name': firstName,
+        'last_name': lastName,
+      };
+
+      final response = await NetworkCall.multipartRequest(
+        url: Urls.editUserDataUrl,
+        fields: fields,
+        imageFile: profileImagePath != null ? File(profileImagePath) : null,
+        imageFieldName: 'image', // ← API অনুযায়ী ফিল্ড নাম
+      );
+
+      if (response.isSuccess) {
+        final updatedData = response.responseData?['data'] ?? response.responseData ?? {};
+        if (updatedData.isNotEmpty) {
+          userProfile.value = UserModel.fromJson(updatedData);
+        } else {
+          await getProfile(); // ফলব্যাক
+        }
+        Get.snackbar('Success', 'Profile updated', backgroundColor: Colors.green, colorText: Colors.white);
+        return true;
+      } else {
+        errorMessage.value = response.errorMessage ?? 'Update failed';
+        if (response.statusCode == 401) Get.offAllNamed('/login');
+        return false;
+      }
     } catch (e) {
-      Get.snackbar('Error', 'Logout failed', backgroundColor: Colors.red, colorText: Colors.white);
+      errorMessage.value = 'Error: $e';
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Delete Account (Permanent)
-  Future<bool> deleteAccount() async {
+  Future<bool> logout() async {
+    isLoading.value = true;
     try {
-      isLoading.value = true;
-      await Future.delayed(const Duration(seconds: 1));
-      // TODO: Call real delete API
+      await Future.delayed(const Duration(milliseconds: 500)); // UI delay
+      await SharedPreferencesHelper.clearAccessToken();
+
+      // শেষে offAll — কোনো snackbar/dialog থাকবে না
+      Get.offAll(() => const SignInScreen());
       return true;
     } catch (e) {
-      Get.snackbar('Error', 'Failed to delete account', backgroundColor: Colors.red, colorText: Colors.white);
+      // এখানে snackbar দেখাবে না — UI ইতিমধ্যে চলে গেছে
+      return false;
+    } finally {
+      isLoading.value = false; // এটা চলবে না, কিন্তু রাখা ভালো
+    }
+  }
+
+  Future<bool> deleteAccount() async {
+    isLoading.value = true;
+    try {
+      final response = await NetworkCall.deleteRequest(url: Urls.deleteUserDataUrl);
+      if (response.isSuccess) {
+        await SharedPreferencesHelper.clearAccessToken();
+        Get.offAll(() => const SignInScreen());
+        Get.snackbar('Deleted', 'Account deleted', backgroundColor: Colors.red, colorText: Colors.white);
+        return true;
+      } else {
+        errorMessage.value = response.errorMessage ?? 'Delete failed';
+        if (response.statusCode == 401) Get.offAll(() => const SignInScreen());;
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = 'Error: $e';
       return false;
     } finally {
       isLoading.value = false;

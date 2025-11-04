@@ -6,11 +6,12 @@ import '../../feature/media/audio/model/audio_summay_model.dart'; // Adjust path
 class SharedPreferencesHelper {
   // Keys
   static const String _accessTokenKey = 'token';
+  static const String _isLoginKey = 'isLogin';
+
   static const String _userTypeKey = 'userType';
   static const String _userIdKey = 'userId';
   static const String _userEmailKey = 'userEmail';
   static const String _userSummaryKey = 'audio_summary'; // Clear & descriptive
-  static const String _isLoginKey = 'isLogin';
   static const String _pickerLocationUuidKey = 'pickerLocationUuid';
 
   // MARK: - Access Token

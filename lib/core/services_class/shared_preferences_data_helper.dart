@@ -8,7 +8,7 @@ class AuthController {
   static String? accessToken;
   static UserModel? userModel;
   static String? accessKey;
-
+  static const String _isLoginKey = 'isLogin';
   static const String _userIdKey = 'userId';
   static const String _carTransportKey = 'carTransportId';
   static const String _accessTokenKey = 'access-token';
@@ -28,7 +28,16 @@ class AuthController {
     accessToken = token;
     userModel = model;
   }
+  static Future<void> saveAccessToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_accessTokenKey, token);
+    await prefs.setBool(_isLoginKey, true);
+  }
 
+  static Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_accessTokenKey);
+  }
   /// Load user data from local storage
   static Future<void> getUserData() async {
     final prefs = await SharedPreferences.getInstance();

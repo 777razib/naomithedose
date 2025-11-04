@@ -6,7 +6,7 @@ class UserModel {
   final String? phone;
   final String? password;
   final String? confirm_password;
-  final String? photo;
+  final String? avatar;
 
   // Constructor
   const UserModel({
@@ -17,7 +17,7 @@ class UserModel {
     this.phone,
     this.password,
     this.confirm_password,
-    this.photo,
+    this.avatar,
   });
 
   // Factory constructor: from JSON
@@ -30,7 +30,7 @@ class UserModel {
       phone: json['phone'] as String?,
       password: json['password'] as String?,
       confirm_password: json['confirm_password'] as String?,
-      photo: json['photo'] as String?,
+      avatar: json['avatar'] as String?,
     );
   }
 
@@ -44,7 +44,7 @@ class UserModel {
       'phone': phone,
       'password': password,
       'confirm_password': confirm_password,
-      'photo': photo,
+      'avatar': avatar,
     };
   }
 }

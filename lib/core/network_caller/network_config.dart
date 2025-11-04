@@ -1,4 +1,4 @@
-
+// lib/core/network_caller/network_config.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart' hide Response;
@@ -6,8 +6,8 @@ import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:logger/logger.dart';
+import 'package:naomithedose/core/services_class/shared_preferences_helper.dart';
 import '../../feature/auth/login/screen/signin_screen.dart';
-import '../services_class/shared_preferences_data_helper.dart';
 
 class NetworkResponse {
   final int statusCode;
@@ -25,178 +25,20 @@ class NetworkResponse {
 
 class NetworkCall {
   static final Logger _logger = Logger();
-  /// POST Multipart request
-  static Future<NetworkResponse> multipartRequest({
-    required String url,
-    Map<String, String>? fields,
-    Map<String, dynamic>? body,
-    File? imageFile,
-    File? videoFile,
-    required String methodType,
-  }) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      var request = http.MultipartRequest(methodType, uri);
 
-      // Add Authorization header
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        request.headers['Authorization'] = AuthController.accessToken!;
-      }
-
-      // Add fields (e.g. name, email)
-      if (fields != null) {
-        request.fields.addAll(fields);
-      }
-
-      // Attach image if present
-      if (imageFile != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'image',
-          imageFile.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
-      }
-
-      // Attach video if present
-      if (videoFile != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'video',
-          videoFile.path,
-          contentType: MediaType('video', 'mp4'),
-        ));
-      }
-
-      // Send request
-      _logRequest(url, request.headers, requestBody: fields, );
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      _logResponse(url, response);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
-        return NetworkResponse(
-          statusCode: response.statusCode,
-          isSuccess: true,
-          responseData: responseDecode,
-        );
-      } else if (response.statusCode == 401) {
-        await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
-      } else {
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
-      }
-    } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
+  // হেল্পার: টোকেন লোড + Bearer যোগ
+  static Future<String?> _getAuthHeader() async {
+    final token = await SharedPreferencesHelper.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      return 'Bearer $token';
     }
+    return null;
   }
 
-  /// POST request
-  static Future<NetworkResponse> postRequest({
-    required String url,
-    Map<String, dynamic>? body,
-  }) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      Map<String, String> headers = {
-        "Content-Type": "application/json",
-      };
-
-      // Only add token if it exists
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        headers['Authorization'] = AuthController.accessToken!;
-      }
-
-      _logRequest(url, headers, requestBody: body);
-
-      Response response = await post(
-        uri,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
-      );
-
-      _logResponse(url, response);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
-        return NetworkResponse(
-          statusCode: response.statusCode,
-          isSuccess: true,
-          responseData: responseDecode,
-        );
-      } else if (response.statusCode == 401) {
-        await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
-      } else {
-        return NetworkResponse(
-          statusCode: response.statusCode,
-          isSuccess: false,
-          responseData: jsonDecode(response.body),
-        );
-      }
-    } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
-    }
-  }
-
-  /// PATCH request
-  static Future<NetworkResponse> patchRequest({
-    required String url,
-    Map<String, dynamic>? body,
-  }) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      Map<String, String> headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        headers['Authorization'] = AuthController.accessToken!;
-      }
-
-      _logRequest(url, headers, requestBody: body);
-      Response response = await patch(
-        uri,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
-      );
-      _logResponse(url, response);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
-        return NetworkResponse(
-          statusCode: response.statusCode,
-          isSuccess: true,
-          responseData: responseDecode,
-        );
-      } else if (response.statusCode == 401) {
-        await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
-      } else {
-        return NetworkResponse(
-          statusCode: response.statusCode,
-          isSuccess: false,
-          responseData: jsonDecode(response.body),
-        );
-      }
-    } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
-    }
+  // হেল্পার: লগআউট
+  static Future<void> _logOut() async {
+    await SharedPreferencesHelper.clearAccessToken();
+    Get.offAll(() => const SignInScreen());
   }
 
   /// GET request
@@ -209,47 +51,136 @@ class NetworkCall {
       if (queryParams != null && queryParams.isNotEmpty) {
         fullUrl += '?';
         queryParams.forEach((key, value) {
-          fullUrl += '$key=$value&';
+          fullUrl += '$key=${Uri.encodeComponent(value.toString())}&';
         });
         fullUrl = fullUrl.substring(0, fullUrl.length - 1);
       }
 
       final Uri uri = Uri.parse(fullUrl);
-      Map<String, String> headers = {
+      final Map<String, String> headers = {
         "Content-Type": "application/json",
       };
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        headers['Authorization'] = AuthController.accessToken!;
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        headers['Authorization'] = authHeader;
       }
 
       _logRequest(fullUrl, headers);
-      Response response = await get(uri, headers: headers);
+      final Response response = await get(uri, headers: headers);
       _logResponse(fullUrl, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
-          responseData: responseDecode,
+          responseData: jsonDecode(response.body),
         );
       } else if (response.statusCode == 401) {
         await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
+        return NetworkResponse(statusCode: 401, isSuccess: false);
       } else {
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           responseData: jsonDecode(response.body),
+          errorMessage: response.body,
         );
       }
     } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
+    }
+  }
+
+  /// POST request
+  static Future<NetworkResponse> postRequest({
+    required String url,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      final Map<String, String> headers = {
+        "Content-Type": "application/json",
+      };
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        headers['Authorization'] = authHeader;
+      }
+
+      _logRequest(url, headers, requestBody: body);
+      final Response response = await post(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
       );
+      _logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseData: jsonDecode(response.body),
+        );
+      } else if (response.statusCode == 401) {
+        await _logOut();
+        return NetworkResponse(statusCode: 401, isSuccess: false);
+      } else {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseData: jsonDecode(response.body),
+          errorMessage: response.body,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
+    }
+  }
+
+  /// PATCH request
+  static Future<NetworkResponse> patchRequest({
+    required String url,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      final Map<String, String> headers = {
+        "Content-Type": "application/json",
+      };
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        headers['Authorization'] = authHeader;
+      }
+
+      _logRequest(url, headers, requestBody: body);
+      final Response response = await patch(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
+      _logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseData: jsonDecode(response.body),
+        );
+      } else if (response.statusCode == 401) {
+        await _logOut();
+        return NetworkResponse(statusCode: 401, isSuccess: false);
+      } else {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseData: jsonDecode(response.body),
+          errorMessage: response.body,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
     }
   }
 
@@ -260,16 +191,17 @@ class NetworkCall {
   }) async {
     try {
       final Uri uri = Uri.parse(url);
-      Map<String, String> headers = {
+      final Map<String, String> headers = {
         "Content-Type": "application/json",
       };
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        headers['Authorization'] = AuthController.accessToken!;
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        headers['Authorization'] = authHeader;
       }
 
       _logRequest(url, headers, requestBody: body);
-      Response response = await put(
+      final Response response = await put(
         uri,
         headers: headers,
         body: body != null ? jsonEncode(body) : null,
@@ -277,28 +209,24 @@ class NetworkCall {
       _logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
-          responseData: responseDecode,
+          responseData: jsonDecode(response.body),
         );
       } else if (response.statusCode == 401) {
         await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
+        return NetworkResponse(statusCode: 401, isSuccess: false);
       } else {
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           responseData: jsonDecode(response.body),
+          errorMessage: response.body,
         );
       }
     } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
     }
   }
 
@@ -309,16 +237,17 @@ class NetworkCall {
   }) async {
     try {
       final Uri uri = Uri.parse(url);
-      Map<String, String> headers = {
+      final Map<String, String> headers = {
         "Content-Type": "application/json",
       };
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        headers['Authorization'] = AuthController.accessToken!;
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        headers['Authorization'] = authHeader;
       }
 
       _logRequest(url, headers, requestBody: body);
-      Response response = await delete(
+      final Response response = await delete(
         uri,
         headers: headers,
         body: body != null ? jsonEncode(body) : null,
@@ -326,32 +255,85 @@ class NetworkCall {
       _logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
-          responseData: responseDecode,
+          responseData: jsonDecode(response.body),
         );
       } else if (response.statusCode == 401) {
         await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
+        return NetworkResponse(statusCode: 401, isSuccess: false);
       } else {
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           responseData: jsonDecode(response.body),
+          errorMessage: response.body,
         );
       }
     } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
     }
   }
 
-  /// PUT Multipart request
+  /// Multipart POST/PUT request
+  /// Multipart POST/PUT request
+  static Future<NetworkResponse> multipartRequest({
+    required String url,
+    Map<String, String>? fields,
+    File? imageFile,
+    String methodType = 'POST',
+    String imageFieldName = 'profileImage', // ← এটা যোগ করুন
+  }) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      final request = http.MultipartRequest(methodType, uri);
+
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        request.headers['Authorization'] = authHeader;
+      }
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      if (imageFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          imageFieldName, // ← এখানে ব্যবহার
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+      }
+
+      _logRequest(url, request.headers, requestBody: fields);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      _logResponse(url, response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: true,
+          responseData: jsonDecode(response.body),
+        );
+      } else if (response.statusCode == 401) {
+        await _logOut();
+        return NetworkResponse(statusCode: 401, isSuccess: false);
+      } else {
+        return NetworkResponse(
+          statusCode: response.statusCode,
+          isSuccess: false,
+          responseData: jsonDecode(response.body),
+          errorMessage: response.body,
+        );
+      }
+    } catch (e) {
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
+    }
+  }
+
+  /*/// PUT Multipart request
   static Future<NetworkResponse> putMultipartRequest({
     required String url,
     required File file,
@@ -362,19 +344,14 @@ class NetworkCall {
       final Uri uri = Uri.parse(url);
       final request = http.MultipartRequest('PUT', uri);
 
-      // Token header
       request.headers['Accept'] = 'application/json';
-      if (AuthController.accessToken != null &&
-          AuthController.accessToken!.isNotEmpty) {
-        request.headers['Authorization'] = AuthController.accessToken!;
+      final authHeader = await _getAuthHeader();
+      if (authHeader != null) {
+        request.headers['Authorization'] = authHeader;
       }
 
-      // Attach image file
-      request.files.add(
-        await http.MultipartFile.fromPath(fieldName!, file.path),
-      );
+      request.files.add(await http.MultipartFile.fromPath(fieldName!, file.path));
 
-      // Add optional fields
       if (fields != null) {
         request.fields.addAll(fields);
       }
@@ -385,49 +362,33 @@ class NetworkCall {
       _logResponse(url, response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseDecode = jsonDecode(response.body);
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: true,
-          responseData: responseDecode,
+          responseData: jsonDecode(response.body),
         );
       } else if (response.statusCode == 401) {
         await _logOut();
-        return NetworkResponse(statusCode: response.statusCode, isSuccess: false);
+        return NetworkResponse(statusCode: 401, isSuccess: false);
       } else {
         return NetworkResponse(
           statusCode: response.statusCode,
           isSuccess: false,
           responseData: jsonDecode(response.body),
+          errorMessage: response.body,
         );
       }
     } catch (e) {
-      return NetworkResponse(
-        statusCode: -1,
-        isSuccess: false,
-        errorMessage: e.toString(),
-      );
+      return NetworkResponse(statusCode: -1, isSuccess: false, errorMessage: e.toString());
     }
   }
-
-  /// Logging request
-  static void _logRequest(String url, Map<String, dynamic> headers,
-      {Map<String, dynamic>? requestBody}) {
-    _logger.i(
-        "🌐 REQUEST\nURL: $url\nHeaders: $headers\nBody: ${jsonEncode(requestBody)}");
+*/
+  /// Logging
+  static void _logRequest(String url, Map<String, dynamic> headers, {Map<String, dynamic>? requestBody}) {
+    _logger.i("REQUEST\nURL: $url\nHeaders: $headers\nBody: ${jsonEncode(requestBody)}");
   }
 
-  /// Logging response
   static void _logResponse(String url, Response response) {
-    _logger.i(
-        "📥 RESPONSE\nURL: $url\nStatus Code: ${response.statusCode}\nBody: ${response.body}");
-  }
-
-  /// Logout and navigate to login
-  static Future<void> _logOut() async {
-    await AuthController.dataClear();
-    Get.offAll( SignInScreen());
+    _logger.i("RESPONSE\nURL: $url\nStatus: ${response.statusCode}\nBody: ${response.body}");
   }
 }
-
-

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:naomithedose/core/services_class/shared_preferences_data_helper.dart';
 import 'package:naomithedose/core/services_class/shared_preferences_helper.dart';
 import '../../../../core/network_caller/network_config.dart';
 import '../../../../core/network_path/natwork_path.dart';
@@ -39,6 +40,7 @@ class LoginApiRiderController extends GetxController {
         }
 
         //UserModel userModel =  UserModel.fromJson(response.responseData!['data']);
+        await AuthController.saveAccessToken(token);
         await SharedPreferencesHelper.saveAccessToken(token);
         await SharedPreferencesHelper.saveUserEmail( userTextEditingController.emailController.text);
        // await SharedPreferencesHelper.saveUserId(data['data']['id']); // await AuthController.setUserData(token, userModel);

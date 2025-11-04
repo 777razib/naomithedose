@@ -4,8 +4,7 @@ import '../../../core/app_colors.dart';
 import '../../choose interest/controller/choose_interest_api_controller.dart';
 import '../../media/audio/screen/audio_play.dart';
 import '../widget/audio_image_widget.dart';
-import '../widget/video_image_widget.dart';
-import '../widget/view_video_and_details.dart';
+
 import 'package:intl/intl.dart'; // For date formatting
 
 class HomeScreen extends StatefulWidget {
@@ -116,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              isVideo ? "Video" : "Audio",
+                              isVideo ? "List" : "Grid",
                               style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -227,12 +226,28 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: controller.episodes.length,
       itemBuilder: (context, i) {
         final ep = controller.episodes[i];
-        return VideoImageWidget(
-          title: ep.titleOriginal ?? "No Title",
-          subTitle: ep.podcast?.titleOriginal ?? "",
+        return AudioImageWidget(
+          title: ep.titleOriginal ?? "Untitled",
+          subTitle: "${_formatDuration(ep.audioLengthSec)} • ${ep.podcast?.publisherOriginal ?? ""}",
           date: _formatDate(ep.pubDateMs),
-          imageUrl: ep.thumbnail ?? ep.image ?? "https://via.placeholder.com/300",
-          onTap: () => Get.to(() => ViewVideoAndDetails()),
+          episodes: "Episodes: 13",
+          imageUrl: ep.thumbnail ?? ep.image ?? "https://via.placeholder.com/327x144",
+          onTap: () {
+
+            final List<String> nearbyEpisodeIds = [ep.id.toString()]; // খালি রাখো না!
+
+            if (nearbyEpisodeIds.isEmpty) {
+              Get.to(() => MusicPlayerScreen(Id: ep.id.toString())); // পুরানো সিঙ্গেল Id ওয়ে
+            } else {
+              Get.to(() => MusicPlayerScreen(
+                episodeIds: nearbyEpisodeIds,
+                currentId: ep.id.toString(),
+              ));
+            }
+            // Pass audio URL to player
+            //Get.to(() => MusicPlayerScreen(Id: '${ep.id}',));
+            //Get.to(() => AudioListScreen(episodeId: ep.audio ?? ""));
+          },
         );
       },
     );

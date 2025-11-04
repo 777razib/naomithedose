@@ -1,9 +1,11 @@
+// lib/controllers/account_text_editing_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class AccountTextEditingController extends GetxController {
   static const int otpLength = 5;
 
+  // ✅ কন্ট্রোলারগুলো
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final emailController = TextEditingController();
@@ -13,7 +15,7 @@ class AccountTextEditingController extends GetxController {
   final confirmPasswordController = TextEditingController();
   final newPasswordController = TextEditingController();
 
-  // ✅ Renamed to avoid conflicts
+  // OTP কন্ট্রোলার
   final List<TextEditingController> otpControllersList = List.generate(otpLength, (index) => TextEditingController());
   final List<FocusNode> focusNodes = List.generate(otpLength, (index) => FocusNode());
 
@@ -29,34 +31,37 @@ class AccountTextEditingController extends GetxController {
   final RxBool isPhoneValid = false.obs;
   final RxString enteredOtp = ''.obs;
 
-  // ✅ Getter for controllers
+  // ✅ Getter
   List<TextEditingController> get controllers => otpControllersList;
 
-  // ✅ Operator to access individual controllers
+  // ✅ Index operator
   TextEditingController operator [](int index) => otpControllersList[index];
 
-  // ✅ Method to get complete OTP
+  // ✅ OTP স্ট্রিং
   String getOtpString() {
-    return otpControllersList.map((controller) => controller.text).join();
+    return otpControllersList.map((c) => c.text).join();
   }
 
   @override
   void onInit() {
     super.onInit();
 
+    // Email validation
     emailController.addListener(() {
       final isValid = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")
           .hasMatch(emailController.text.trim());
       isEmailValid.value = isValid;
     });
 
+    // Phone validation
     phoneController.addListener(() {
       final isValid = RegExp(r"^\d{6,}$").hasMatch(phoneController.text.trim());
       isPhoneValid.value = isValid;
     });
   }
 
- /* @override
+  // এটাই ফিক্স — dispose করো
+  @override
   void onClose() {
     firstNameController.dispose();
     lastNameController.dispose();
@@ -65,13 +70,14 @@ class AccountTextEditingController extends GetxController {
     rollController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    newPasswordController.dispose();
 
-    // Dispose OTP controllers
+    // OTP কন্ট্রোলার
     for (var controller in otpControllersList) {
       controller.dispose();
     }
 
-    // Dispose focus nodes
+    // Focus nodes
     for (var node in focusNodes) {
       node.dispose();
     }
@@ -79,6 +85,7 @@ class AccountTextEditingController extends GetxController {
     agreeController.dispose();
     dateOfBirthController.dispose();
     fcmTokenController.dispose();
+
     super.onClose();
-  }*/
+  }
 }

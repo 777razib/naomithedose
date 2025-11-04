@@ -9,6 +9,9 @@ class Urls {
   static const String authForgetSendOtp = '$_baseUrl/auth/forget/send-otp';
   static const String authFVerifyOtp = '$_baseUrl/auth/forget/verify-otp';
   static const String authForgetResetPassword = '$_baseUrl/auth/forget/reset-password';
+  static const String getUserDataUrl = '$_baseUrl/user/me';
+  static const String editUserDataUrl = '$_baseUrl/user/me/edit';
+  static const String deleteUserDataUrl = '$_baseUrl/user/delete-my-profile';
   static   String singleAudio(String id) => '$_baseUrl/episode/$id?show_transcript=1';
   static String searchingText(String url,String text){
     final encoded=Uri.encodeComponent(url);

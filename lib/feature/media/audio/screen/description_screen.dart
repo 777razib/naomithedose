@@ -500,14 +500,14 @@ class PodcastDescriptionScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item.titleOriginal ?? 'Unknown Title',
+                                item.title ?? 'Unknown Title',
                                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                item.podcast?.titleOriginal ?? 'Unknown Podcast',
+                                item.description ?? 'Unknown Podcast',
                                 style: const TextStyle(fontSize: 14, color: Colors.grey),
                               ),
                             ],
@@ -708,7 +708,6 @@ class PodcastDescriptionScreen extends StatelessWidget {
     }
   }
 
-  // ডায়লগ দেখাও
   void _showExplanationDialog(BuildContext context) {
     _overlayEntry?.remove();
     _overlayEntry = null;

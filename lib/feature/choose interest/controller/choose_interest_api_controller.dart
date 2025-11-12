@@ -113,7 +113,6 @@ class ChooseInterestApiController extends GetxController {
     required String? interest,
     bool loadMore = false,
   }) async {
-    // যদি নতুন সার্চ বা ক্যাটাগরি, অথবা loadMore না হয় → পুরোনো ডেটা ক্লিয়ার
     if (!loadMore) {
       final bool isNewQuery = interest != null && interest != _currentQuery;
       if (isNewQuery || episodes.isNotEmpty) {

@@ -718,83 +718,85 @@ class PodcastDescriptionScreen extends StatelessWidget {
     _overlayEntry = OverlayEntry(
       builder: (ctx) => Material(
         color: Colors.transparent,
-        child: GestureDetector(
-          onTap: () {
-            _overlayEntry?.remove();
-            _overlayEntry = null;
-          },
-          child: Container(
-            color: Colors.black.withOpacity(0.6),
-            child: Center(
-              child: GestureDetector(
-                onTap: () {},
-                child: Container(
-                  margin: const EdgeInsets.all(32),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SelectableText(
-                              model.topic,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kTeal),
-                              onSelectionChanged: (selection, cause) {
-                                dialogSelectedText = selection.textInside(model.topic);
+        child: SingleChildScrollView(
+          child: GestureDetector(
+            onTap: () {
+              _overlayEntry?.remove();
+              _overlayEntry = null;
+            },
+            child: Container(
+              color: Colors.black.withOpacity(0.6),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    margin: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SelectableText(
+                                model.topic,
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kTeal),
+                                onSelectionChanged: (selection, cause) {
+                                  dialogSelectedText = selection.textInside(model.topic);
+                                },
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: dialogSelectedText.isEmpty ? null : () {
+                                Clipboard.setData(ClipboardData(text: dialogSelectedText));
+                                Get.snackbar('Copied!', 'Topic copied', backgroundColor: kTeal, colorText: Colors.white, duration: const Duration(seconds: 1));
+                              },
+                              icon: const Icon(Icons.content_copy, size: 14, color: kTeal),
+                              label: const Text('Copy', style: TextStyle(color: kTeal, fontSize: 11)),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: '${model.topic}\n\n${model.explanation}'));
+                                Get.snackbar('Copied!', 'Full copied', backgroundColor: kTeal, colorText: Colors.white, duration: const Duration(seconds: 1));
+                              },
+                              icon: const Icon(Icons.copy_all, size: 14, color: kTeal),
+                              label: const Text('All', style: TextStyle(color: kTeal, fontSize: 11)),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.grey),
+                              onPressed: () {
+                                _overlayEntry?.remove();
+                                _overlayEntry = null;
                               },
                             ),
-                          ),
-                          TextButton.icon(
-                            onPressed: dialogSelectedText.isEmpty ? null : () {
-                              Clipboard.setData(ClipboardData(text: dialogSelectedText));
-                              Get.snackbar('Copied!', 'Topic copied', backgroundColor: kTeal, colorText: Colors.white, duration: const Duration(seconds: 1));
-                            },
-                            icon: const Icon(Icons.content_copy, size: 14, color: kTeal),
-                            label: const Text('Copy', style: TextStyle(color: kTeal, fontSize: 11)),
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: '${model.topic}\n\n${model.explanation}'));
-                              Get.snackbar('Copied!', 'Full copied', backgroundColor: kTeal, colorText: Colors.white, duration: const Duration(seconds: 1));
-                            },
-                            icon: const Icon(Icons.copy_all, size: 14, color: kTeal),
-                            label: const Text('All', style: TextStyle(color: kTeal, fontSize: 11)),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.grey),
-                            onPressed: () {
-                              _overlayEntry?.remove();
-                              _overlayEntry = null;
-                            },
-                          ),
-                        ],
-                      ),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        model.explanation,
-                        style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
-                        onSelectionChanged: (selection, cause) {
-                          dialogSelectedText = selection.textInside(model.explanation);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      if (model.occurrences.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          children: model.occurrences.map((time) => Chip(
-                            label: Text(time, style: const TextStyle(fontSize: 12)),
-                            backgroundColor: kTeal.withOpacity(0.1),
-                          )).toList(),
+                          ],
                         ),
-                    ],
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          model.explanation,
+                          style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
+                          onSelectionChanged: (selection, cause) {
+                            dialogSelectedText = selection.textInside(model.explanation);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        if (model.occurrences.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            children: model.occurrences.map((time) => Chip(
+                              label: Text(time, style: const TextStyle(fontSize: 12)),
+                              backgroundColor: kTeal.withOpacity(0.1),
+                            )).toList(),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

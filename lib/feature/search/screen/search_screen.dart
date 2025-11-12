@@ -16,34 +16,20 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-
-  // Singleton
   final ChooseInterestApiController apiCtrl = Get.put(ChooseInterestApiController());
 
-  // UI state
   bool isListView = true;
-  int selectedCategoryIndex = 0;
-
-  // Track current query for pagination
-  String _currentQuery = "Business"; // ← এই লাইনটি যোগ করা হয়েছে
-
-  final List<String> categories = [
-    "Business",
-    "Education",
-    "Comedy",
-    "Fiction",
-    "History",
-  ];
+  String _currentQuery = "Business";
 
   @override
   void initState() {
     super.initState();
-    _loadCategory(categories[selectedCategoryIndex]);
+    _searchInApi("Business");
 
     _searchController.addListener(() {
       final query = _searchController.text.trim();
       if (query.isEmpty) {
-        _loadCategory(categories[selectedCategoryIndex]);
+        _searchInApi("Business");
       } else {
         _searchInApi(query);
       }
@@ -56,17 +42,14 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // Load category
-  Future<void> _loadCategory(String term) async {
-    _currentQuery = term;
-    _searchController.clear();
-    await apiCtrl.chooseInterestApiMethod(interest: term, loadMore: false);
-  }
-
-  // Search API
   Future<void> _searchInApi(String query) async {
     _currentQuery = query;
     await apiCtrl.chooseInterestApiMethod(interest: query, loadMore: false);
+  }
+
+  // Pull to refresh
+  Future<void> _onRefresh() async {
+    await _searchInApi(_currentQuery);
   }
 
   @override
@@ -93,7 +76,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
-                        keyboardType: TextInputType.text,
                         onSubmitted: (value) {
                           final query = value.trim();
                           if (query.isNotEmpty) {
@@ -111,7 +93,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Toggle
                   GestureDetector(
                     onTap: () => setState(() => isListView = !isListView),
                     child: AnimatedContainer(
@@ -159,72 +140,62 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 16),
 
-            // CATEGORY CHIPS
-            SizedBox(
-              height: 45,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, i) {
-                  final selected = selectedCategoryIndex == i;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selectedCategoryIndex = i);
-                      _loadCategory(categories[i]);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primary, width: 1.5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categories[i],
-                          style: TextStyle(
-                            color: selected ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // RESULTS
+            // RESULTS + PULL TO REFRESH (NO RETRY BUTTON)
             Expanded(
-              child: Obx(() {
-                if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              child: RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: Obx(() {
+                  // First time loading
+                  if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (apiCtrl.errorMessage.isNotEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(apiCtrl.errorMessage.value, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton(onPressed: apiCtrl.retry, child: const Text("Retry")),
-                      ],
-                    ),
-                  );
-                }
+                  // Show error only when NOT loading
+                  if (apiCtrl.errorMessage.isNotEmpty && !apiCtrl.isLoading.value) {
+                    return Center(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 100),
+                          const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "No internet connection",
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Pull down to retry",
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                if (apiCtrl.episodes.isEmpty) {
-                  return const Center(child: Text("No results found", style: TextStyle(color: Colors.grey, fontSize: 16)));
-                }
+                  // No results
+                  if (apiCtrl.episodes.isEmpty) {
+                    return Center(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 100),
+                          Icon(Icons.search_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text("No results found", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          SizedBox(height: 8),
+                          Text("Try searching something else", style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }
 
-                return isListView ? _buildListView() : _buildGridView();
-              }),
+                  // Show List or Grid
+                  return isListView ? _buildListView() : _buildGridView();
+                }),
+              ),
             ),
           ],
         ),
@@ -240,7 +211,10 @@ class _SearchScreenState extends State<SearchScreen> {
       itemBuilder: (context, i) {
         if (i == apiCtrl.episodes.length) {
           apiCtrl.loadNextPage();
-          return const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator()));
+          return const Padding(
+            padding: EdgeInsets.all(12),
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final item = apiCtrl.episodes[i];
@@ -311,6 +285,6 @@ class _SearchScreenState extends State<SearchScreen> {
   String _formatDate(int? ms) {
     if (ms == null) return '';
     final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    return DateFormat('yyyy-MM-dd').format(dt);
+    return DateFormat('MMM dd, yyyy').format(dt);
   }
 }

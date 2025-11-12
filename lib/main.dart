@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 
 import 'feature/splash/splash_screen.dart';
@@ -19,6 +20,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: SplashScreen(),
       ),
+      builder: EasyLoading.init(), // এই লাইনটি যোগ করুন
     );
   }
 }

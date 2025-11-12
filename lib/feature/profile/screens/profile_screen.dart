@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
-import '../../auth/login/screen/signin_screen.dart';
 import '../../auth/model/user_model.dart';
 import '../controllers/profile_controller.dart';
 import '../widget/about_us_widget.dart';

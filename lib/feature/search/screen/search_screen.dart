@@ -228,8 +228,8 @@ class _SearchScreenState extends State<SearchScreen> {
             imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
             onTap: () {
               Get.to(() => MusicPlayerScreen(
-                episodeIds: [item.id.toString()],
-                currentId: item.id.toString(),
+                episodeUrls: [item.id.toString()],
+                currentTopic: item.id.toString(),
               ));
             },
           ),
@@ -264,8 +264,8 @@ class _SearchScreenState extends State<SearchScreen> {
           imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
           onTap: () {
             Get.to(() => MusicPlayerScreen(
-              episodeIds: [item.id.toString()],
-              currentId: item.id.toString(),
+              episodeUrls: [item.id.toString()],
+              currentTopic: item.id.toString(),
             ));
           },
         );

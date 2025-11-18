@@ -76,15 +76,6 @@ class AudioImageWidget extends StatelessWidget {
                             size: 40, color: Colors.grey),
                       ),
                     ),
-                    // Play icon (uncomment if you want it)
-                    /*
-                    const Positioned.fill(
-                      child: Center(
-                        child: Icon(Icons.play_circle_filled,
-                            size: 40, color: Colors.white),
-                      ),
-                    ),
-                    */
                   ],
                 ),
               ),
@@ -127,44 +118,59 @@ class AudioImageWidget extends StatelessWidget {
                     // ----- DATE + DURATION (right-aligned) -----
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Episodes (old field – optional)
                         if (episodes != null && episodes!.isNotEmpty)
-                          Text(
-                            episodes!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.primary,
+                          Flexible(
+                            child: Text(
+                              episodes!,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          )
-                        else
-                          const SizedBox.shrink(),
+                          ),
 
                         // Date + Duration
-                        Row(
-                          children: [
-                            // Duration (new)
-                            if (durationSec != null && durationSec! > 0)
-                              Text(
-                                _formatDuration(durationSec),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                        Flexible(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // Duration (new)
+                              if (durationSec != null && durationSec! > 0)
+                                Flexible(
+                                  child: Text(
+                                    _formatDuration(durationSec),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            if (durationSec != null && durationSec! > 0 && date != null && date!.isNotEmpty)
-                              const SizedBox(width: 8),
+                              if (durationSec != null &&
+                                  durationSec! > 0 &&
+                                  date != null &&
+                                  date!.isNotEmpty)
+                                const SizedBox(width: 8),
 
-                            // Date
-                            if (date != null && date!.isNotEmpty)
-                              Text(
-                                date!,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
+                              // Date
+                              if (date != null && date!.isNotEmpty)
+                                Flexible(
+                                  child: Text(
+                                    date!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),

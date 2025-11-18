@@ -1,3 +1,4 @@
+/*
 // lib/feature/home/screen/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/app_colors.dart';
 import '../../choose interest/controller/choose_interest_api_controller.dart';
 import '../../media/audio/screen/audio_play.dart';
+import '../controller/home_controller.dart';
 import '../widget/audio_image_widget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ChooseInterestApiController controller = Get.put(ChooseInterestApiController());
+ // final HomeController controller=Get.put(HomeController());
 
   bool isVideo = false;
   int selectedIndex = 0;
@@ -333,6 +336,229 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+}*/
+// lib/feature/home/screen/home_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../../core/app_colors.dart';
+import '../../media/audio/screen/audio_play.dart';
+import '../controller/home_controller.dart';        // ← নতুন কন্ট্রোলার
+import '../widget/audio_image_widget.dart';           // ← তোমার পুরাতন উইজেট (যেটা আগেও ছিল)
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // শুধু নতুন HomeController ব্যবহার করবো
+  final HomeController controller = Get.put(HomeController());
+
+  bool isGrid = true; // true = Grid, false = List
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFFF3),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+
+            // Header: Logo + Grid/List Toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                SizedBox(
+                width: 58,
+                height: 58,
+                child: Image.asset("assets/icons/linly-high-resolution-logo 1.png"),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => setState(() => isGrid = !isGrid),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 120,
+                    height: 45,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedAlign(
+                          duration: const Duration(milliseconds: 300),
+                          alignment: isGrid ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            width: 50,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: Row(
+
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Text("Grid", style: TextStyle(color: isGrid ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
+                              Text("List", style: TextStyle(color: isGrid ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Main Content + Pull to Refresh + Infinite Scroll
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: controller.onRefresh,
+                child: Obx(() {
+                  // First time loading
+                  if (controller.isLoading.value && controller.podcasts.isEmpty) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  }
+
+                  // Error
+                  if (controller.errorMessage.isNotEmpty) {
+                    return _buildErrorView();
+                  }
+
+                  // Empty
+                  if (controller.podcasts.isEmpty) {
+                    return _buildEmptyView();
+                  }
+
+                  // Success → Show podcasts using your old AudioImageWidget
+                  return isGrid ? _buildGridView() : _buildListView();
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ========== Grid View (using your old widget) ==========
+  Widget _buildGridView() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: controller.podcasts.length + (controller.hasMoreData.value ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == controller.podcasts.length) {
+          controller.loadMore();
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+        }
+
+        final podcast = controller.podcasts[index];
+
+        return AudioImageWidget(
+          title: podcast.name ?? "Unknown Podcast",
+          subTitle: "${podcast.description ?? ""} description",
+          date: podcast.releaseDate ?? "",
+          episodes: "${podcast.episodeCount ?? 0} episodes",
+          imageUrl: podcast.imageUrl ?? "https://via.placeholder.com/300",
+          onTap: () {
+            Get.to(() => MusicPlayerScreen(
+              episodeUrls: [podcast.feedUrl.toString()],
+              currentTopic: podcast.name.toString(),
+            ));
+            Get.snackbar("Info", "Podcast details coming soon!");
+          },
+        );
+      },
+    );
+  }
+
+  // ========== List View (using your old widget) ==========
+  Widget _buildListView() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: controller.podcasts.length + (controller.hasMoreData.value ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == controller.podcasts.length) {
+          controller.loadMore();
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          );
+        }
+
+        final podcast = controller.podcasts[index];
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: AudioImageWidget(
+            title: podcast.name ?? "Unknown Podcast",
+            subTitle: "${podcast.description ?? ""} description • ${podcast.country ?? ""}",
+            date: podcast.releaseDate ?? "",
+            episodes: "${podcast.episodeCount ?? 0} episodes",
+            imageUrl: podcast.imageUrl ?? "https://via.placeholder.com/300",
+            onTap: () {
+              Get.to(() => MusicPlayerScreen(
+                episodeUrls: [podcast.feedUrl.toString()],
+                currentTopic: podcast.name.toString(),
+              ));
+              Get.snackbar("Info", "Podcast details coming soon!");
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // ========== Error & Empty States ==========
+  Widget _buildErrorView() {
+    return Center(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 100),
+          const Icon(Icons.wifi_off, size: 80, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(controller.errorMessage.value, textAlign: TextAlign.center),
+          const Text("Pull down to retry", style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return Center(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          Icon(Icons.podcasts_outlined, size: 80, color: Colors.grey),
+          SizedBox(height: 16),
+          Text("No podcasts found", style: TextStyle(fontSize: 16, color: Colors.grey)),
+          Text("Pull down to refresh", style: TextStyle(color: Colors.grey)),
+        ],
+      ),
     );
   }
 }

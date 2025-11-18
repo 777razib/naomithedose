@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:naomithedose/core/style/text_style.dart';
 import '../../core/app_colors.dart';
 import '../auth/login/screen/signin_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // যোগ করুন
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

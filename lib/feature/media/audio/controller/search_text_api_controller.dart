@@ -1,93 +1,10 @@
-/*
-// lib/feature/media/audio/controller/search_text_api_controller.dart
-import 'package:get/get.dart';
-import '../../../../core/network_caller/network_config.dart';
-import '../../../../core/network_path/natwork_path.dart';
-import '../model/search_text_model.dart'; // Your TopicSummaryModel
 
-class SearchTextApiController extends GetxController {
-  // Observables for UI
-  var topicSummaryModel = Rxn<TopicSummaryModel>();
-  var isSuccess = false.obs;
-  var isLoading = false.obs;
-
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
-
-  /// Search in transcript
-  Future<bool> searchTextApiMethod(String transcriptUrl, String query) async {
-    if (query.trim().isEmpty) {
-      _errorMessage = 'Search query is empty';
-      isSuccess(false);
-      update();
-      return false;
-    }
-
-    isLoading(true);
-    isSuccess(false);
-    _errorMessage = null;
-    topicSummaryModel.value = null;
-
-    bool success = false;
-
-    try {
-      final response = await NetworkCall.getRequest(
-        url: Urls.searchingText(transcriptUrl, query),
-      );
-
-      print("🔗 Search URL: ${Urls.searchingText(transcriptUrl, query)}");
-      print("📥 Raw Response: ${response.responseData}");
-
-      if (response.isSuccess && response.responseData != null) {
-        final data = response.responseData!;
-
-        dynamic jsonData;
-        if (data.containsKey('data')) {
-          jsonData = data['data'];
-        } else {
-          jsonData = data; // fallback
-        }
-
-        try {
-          topicSummaryModel.value = TopicSummaryModel.fromJson(jsonData);
-          _errorMessage = null;
-          isSuccess(true);
-          success = true;
-          print("✅ Search Success: ${topicSummaryModel.value?.topic}");
-        } catch (parseError) {
-          _errorMessage = 'Parse error: $parseError';
-          print("❌ Parse Error: $parseError");
-        }
-      } else {
-        _errorMessage = response.errorMessage ?? 'Search failed';
-        print("❌ API Error: ${_errorMessage}");
-      }
-    } catch (e) {
-      _errorMessage = 'Network error: $e';
-      print("❌ Exception: $e");
-    } finally {
-      isLoading(false);
-    }
-
-    update(); // Notify GetX widgets
-    return success;
-  }
-
-  /// Optional: Clear results
-  void clearSearch() {
-    topicSummaryModel.value = null;
-    isSuccess(false);
-    _errorMessage = null;
-    update();
-  }
-}*/
-// lib/feature/media/audio/controller/search_text_api_controller.dart
 import 'package:get/get.dart';
 import '../../../../core/network_caller/network_config.dart';
 import '../../../../core/network_path/natwork_path.dart';
 import '../model/search_text_model.dart';
 
-class SearchTextApiController extends GetxController {
+/*class SearchTextApiController extends GetxController {
   var topicSummaryModel = Rxn<TopicSummaryModel>();
   var isSuccess = false.obs;
   var isLoading = false.obs;
@@ -171,5 +88,98 @@ class SearchTextApiController extends GetxController {
     isSuccess(false);
     _errorMessage = null;
     update();
+  }
+}*/
+
+
+// lib/feature/media/audio/controller/search_text_api_controller.dart
+
+
+
+class SearchTextApiController extends GetxController {
+  final Rxn<TranscriptionResult> transcriptionResult = Rxn<TranscriptionResult>();
+  final RxBool isLoading = false.obs;
+  final RxBool isSuccess = false.obs;
+  final RxString errorMessage = ''.obs;
+
+  /// jobId দিয়ে ট্রান্সক্রিপশন ফেচ করুন + Auto Polling (max 60 seconds)
+  Future<void> fetchTranscription(String jobId) async {
+    if (jobId.isEmpty) {
+      errorMessage.value = 'Invalid job ID';
+      isSuccess.value = false;
+      return;
+    }
+
+    // Reset state
+    isLoading.value = true;
+    errorMessage.value = '';
+    transcriptionResult.value = null;
+    isSuccess.value = false;
+
+    int attempt = 0;
+    const maxAttempts = 20;        // 20 × 3s = 60 seconds max wait
+    const delaySeconds = 3;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        final response = await NetworkCall.getRequest(
+          url: Urls.searchingTexts(jobId),
+        );
+
+        print("Polling transcription (Attempt $attempt): ${Urls.searchingTexts(jobId)}");
+
+        if (response.isSuccess && response.responseData != null) {
+          final data = response.responseData!;
+
+          // Success: transcription ready
+          if (data is Map<String, dynamic> && (data.containsKey('transcription') || data.containsKey('text'))) {
+            transcriptionResult.value = TranscriptionResult.fromJson(data);
+            isSuccess.value = true;
+            isLoading.value = false;
+            print("Transcription ready after $attempt attempts!");
+            return;
+          }
+        }
+
+        // Still processing or 404
+        final status = response.statusCode;
+        final detail = response.responseData?['detail']?.toString() ?? '';
+
+        if (status == 404 || detail.contains('processing') || detail.contains('not found') || detail.contains('pending')) {
+          print("Still processing... retrying in $delaySeconds seconds");
+          await Future.delayed(Duration(seconds: delaySeconds));
+          continue; // Retry
+        } else {
+          // Real error
+          errorMessage.value = detail.isNotEmpty ? detail : 'Failed to load transcription';
+          isSuccess.value = false;
+          isLoading.value = false;
+          return;
+        }
+      } catch (e) {
+        print("Network error during polling: $e");
+        errorMessage.value = 'Connection error. Retrying...';
+        await Future.delayed(Duration(seconds: delaySeconds));
+      }
+    }
+
+    // Timeout
+    errorMessage.value = 'Transcription took too long. Please try again later.';
+    isLoading.value = false;
+    isSuccess.value = false;
+  }
+
+  void clear() {
+    transcriptionResult.value = null;
+    isSuccess.value = false;
+    errorMessage.value = '';
+    isLoading.value = false;
+  }
+
+  @override
+  void onClose() {
+    clear();
+    super.onClose();
   }
 }

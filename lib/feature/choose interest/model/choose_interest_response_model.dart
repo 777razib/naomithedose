@@ -43,6 +43,8 @@ class ChooseInterestItem {
   final String? descriptionOriginal;
   final String? titleHighlighted;
   final String? titleOriginal;
+  final String? title;
+  final String? description;
   final List<String>? transcriptsHighlighted;
   final String? image;
   final String? thumbnail;
@@ -63,6 +65,8 @@ class ChooseInterestItem {
     this.descriptionOriginal,
     this.titleHighlighted,
     this.titleOriginal,
+    this.title,
+    this.description,
     this.transcriptsHighlighted,
     this.image,
     this.thumbnail,
@@ -81,6 +85,8 @@ class ChooseInterestItem {
       audio: json['audio'] as String?,
       audioLengthSec: json['audio_length_sec'] as int?,
       rss: json['rss'] as String?,
+      description: json['description'] as String?,
+      title: json['title'] as String?,
       descriptionHighlighted: json['description_highlighted'] as String?,
       descriptionOriginal: json['description_original'] as String?,
       titleHighlighted: json['title_highlighted'] as String?,
@@ -106,12 +112,14 @@ class ChooseInterestItem {
     'audio': audio,
     'audio_length_sec': audioLengthSec,
     'rss': rss,
+    'description': description,
     'description_highlighted': descriptionHighlighted,
     'description_original': descriptionOriginal,
     'title_highlighted': titleHighlighted,
     'title_original': titleOriginal,
     'transcripts_highlighted': transcriptsHighlighted,
     'image': image,
+    'title': title,
     'thumbnail': thumbnail,
     'itunes_id': itunesId,
     'pub_date_ms': pubDateMs,

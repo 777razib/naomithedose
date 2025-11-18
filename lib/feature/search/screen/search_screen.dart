@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/app_colors.dart';
-import '../../choose interest/controller/choose_interest_api_controller.dart';
 import '../../home/widget/audio_image_widget.dart';
 import '../../media/audio/screen/audio_play.dart';
+import '../controller/searching_api_controller.dart'; // ← কন্ট্রোলার
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,34 +16,20 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final SearchingApiController apiCtrl = Get.put(SearchingApiController());
 
-  // Singleton
-  final ChooseInterestApiController apiCtrl = Get.put(ChooseInterestApiController());
-
-  // UI state
   bool isListView = true;
-  int selectedCategoryIndex = 0;
-
-  // Track current query for pagination
-  String _currentQuery = "Business"; // ← এই লাইনটি যোগ করা হয়েছে
-
-  final List<String> categories = [
-    "Business",
-    "Education",
-    "Comedy",
-    "Fiction",
-    "History",
-  ];
+  String _currentQuery = "Business";
 
   @override
   void initState() {
     super.initState();
-    _loadCategory(categories[selectedCategoryIndex]);
+    _searchInApi("Business");
 
     _searchController.addListener(() {
       final query = _searchController.text.trim();
       if (query.isEmpty) {
-        _loadCategory(categories[selectedCategoryIndex]);
+        _searchInApi("Business");
       } else {
         _searchInApi(query);
       }
@@ -56,17 +42,13 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // Load category
-  Future<void> _loadCategory(String term) async {
-    _currentQuery = term;
-    _searchController.clear();
-    await apiCtrl.chooseInterestApiMethod(interest: term, loadMore: false);
-  }
-
-  // Search API
   Future<void> _searchInApi(String query) async {
     _currentQuery = query;
-    await apiCtrl.chooseInterestApiMethod(interest: query, loadMore: false);
+    await apiCtrl.searchingApiMethod(interest: query, loadMore: false);
+  }
+
+  Future<void> _onRefresh() async {
+    await _searchInApi(_currentQuery);
   }
 
   @override
@@ -93,7 +75,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
-                        keyboardType: TextInputType.text,
                         onSubmitted: (value) {
                           final query = value.trim();
                           if (query.isNotEmpty) {
@@ -111,7 +92,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Toggle
                   GestureDetector(
                     onTap: () => setState(() => isListView = !isListView),
                     child: AnimatedContainer(
@@ -159,72 +139,49 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 16),
 
-            // CATEGORY CHIPS
-            SizedBox(
-              height: 45,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, i) {
-                  final selected = selectedCategoryIndex == i;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selectedCategoryIndex = i);
-                      _loadCategory(categories[i]);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primary, width: 1.5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categories[i],
-                          style: TextStyle(
-                            color: selected ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // RESULTS
             Expanded(
-              child: Obx(() {
-                if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              child: RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: Obx(() {
+                  if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (apiCtrl.errorMessage.isNotEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(apiCtrl.errorMessage.value, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton(onPressed: apiCtrl.retry, child: const Text("Retry")),
-                      ],
-                    ),
-                  );
-                }
+                  if (apiCtrl.errorMessage.isNotEmpty && !apiCtrl.isLoading.value) {
+                    return Center(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 100),
+                          const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text("No internet connection", style: TextStyle(color: Colors.grey, fontSize: 16), textAlign: TextAlign.center),
+                          const SizedBox(height: 8),
+                          Text("Pull down to retry", style: TextStyle(color: Colors.grey.shade600, fontSize: 14), textAlign: TextAlign.center),
+                        ],
+                      ),
+                    );
+                  }
 
-                if (apiCtrl.episodes.isEmpty) {
-                  return const Center(child: Text("No results found", style: TextStyle(color: Colors.grey, fontSize: 16)));
-                }
+                  if (apiCtrl.episodes.isEmpty) {
+                    return Center(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 100),
+                          Icon(Icons.search_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text("No results found", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          SizedBox(height: 8),
+                          Text("Try searching something else", style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }
 
-                return isListView ? _buildListView() : _buildGridView();
-              }),
+                  return isListView ? _buildListView() : _buildGridView();
+                }),
+              ),
             ),
           ],
         ),
@@ -232,7 +189,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // LIST VIEW
   Widget _buildListView() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -240,22 +196,24 @@ class _SearchScreenState extends State<SearchScreen> {
       itemBuilder: (context, i) {
         if (i == apiCtrl.episodes.length) {
           apiCtrl.loadNextPage();
-          return const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator()));
+          return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
         }
 
-        final item = apiCtrl.episodes[i];
+        final podcast = apiCtrl.episodes[i];
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: AudioImageWidget(
-            title: item.titleOriginal ?? "Untitled",
-            subTitle: "${_formatDuration(item.audioLengthSec)} • ${item.podcast?.publisherOriginal ?? ""}",
-            date: _formatDate(item.pubDateMs),
-            episodes: "Episodes: 13",
-            imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
+            title: podcast.name,
+            subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} episodes",
+            date: _formatDate(podcast.releaseDate),
+            episodes: "${podcast.episodeCount} episodes",
+            imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
             onTap: () {
+              // আপনার প্লেয়ারে যাওয়ার জন্য podcastId বা feedUrl দিন
               Get.to(() => MusicPlayerScreen(
-                episodeIds: [item.id.toString()],
-                currentId: item.id.toString(),
+                episodeUrls: [podcast.feedUrl], // অথবা podcast.itunesUrl
+                currentTopic: podcast.name,
               ));
             },
           ),
@@ -264,7 +222,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // GRID VIEW
   Widget _buildGridView() {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -281,36 +238,32 @@ class _SearchScreenState extends State<SearchScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final item = apiCtrl.episodes[i];
+        final podcast = apiCtrl.episodes[i];
+
         return AudioImageWidget(
-          title: item.titleOriginal ?? "Untitled",
-          subTitle: "${_formatDuration(item.audioLengthSec)} • ${item.podcast?.publisherOriginal ?? ""}",
-          date: _formatDate(item.pubDateMs),
-          episodes: "Episodes: 13",
-          imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
+          title: podcast.name,
+          subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} eps",
+          date: _formatDate(podcast.releaseDate),
+          episodes: "${podcast.episodeCount} eps",
+          imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
           onTap: () {
+            print("-----${podcast.feedUrl}");
+            print("-----${podcast.name}");
             Get.to(() => MusicPlayerScreen(
-              episodeIds: [item.id.toString()],
-              currentId: item.id.toString(),
+              episodeUrls: [podcast.feedUrl],
+              currentTopic: podcast.name,
             ));
           },
         );
       },
     );
   }
-
-  // Helper: format duration
-  String _formatDuration(int? sec) {
-    if (sec == null || sec <= 0) return "";
-    final m = sec ~/ 60;
-    final s = sec % 60;
-    return "${m}m ${s}s";
-  }
-
-  // Helper: format date
-  String _formatDate(int? ms) {
-    if (ms == null) return '';
-    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    return DateFormat('yyyy-MM-dd').format(dt);
+  String _formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return "Unknown date";
+    }
   }
 }

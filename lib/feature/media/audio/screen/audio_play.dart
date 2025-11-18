@@ -1,25 +1,23 @@
-
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/Get.dart';
 import 'dart:math' as math;
-
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
-import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
+import '../controller/search_text_api_controller.dart';
 
 const kTeal = Color(0xFF39CCCC);
 
 class MusicPlayerScreen extends StatefulWidget {
   const MusicPlayerScreen({
     super.key,
-    this.episodeIds,
-    this.currentId,
+    this.episodeUrls,        // List of iTunes URLs (e.g. podcast.itunesUrl)
+    this.currentTopic = 'general', // Default topic for transcription
     this.Id,
   });
 
-  final List<String>? episodeIds;
-  final String? currentId;
+  final List<String>? episodeUrls;
+  final String currentTopic;
   final String? Id;
 
   @override
@@ -27,54 +25,78 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  late final AudioPlayApiController audioPlayApiController;
+  late final AudioPlayApiControllers audioController;
+  late final SearchTextApiController searchTextController;
+
   final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
 
-  String currentEpisodeId = '';
   int currentIndex = 0;
+  String currentUrl = '';
 
   @override
   void initState() {
     super.initState();
 
-    audioPlayApiController = Get.isRegistered<AudioPlayApiController>()
-        ? Get.find<AudioPlayApiController>()
-        : Get.put(AudioPlayApiController());
+    // 1. Audio Controller
+    audioController = Get.isRegistered<AudioPlayApiControllers>()
+        ? Get.find<AudioPlayApiControllers>()
+        : Get.put(AudioPlayApiControllers());
 
-    String id = widget.Id ?? widget.currentId ?? widget.episodeIds?.firstOrNull ?? '';
-    if (id.isEmpty && widget.episodeIds != null && widget.episodeIds!.isNotEmpty) {
-      currentIndex = widget.episodeIds!.indexOf(widget.currentId ?? '');
-      if (currentIndex == -1) currentIndex = 0;
-      id = widget.episodeIds![currentIndex];
-    }
+    // 2. Search Text Controller
+    searchTextController = Get.isRegistered<SearchTextApiController>()
+        ? Get.find<SearchTextApiController>()
+        : Get.put(SearchTextApiController());
 
-    if (id.isNotEmpty) {
-      currentEpisodeId = id;
-      _loadEpisode(id);
+    // Load first episode
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isNotEmpty) {
+      currentIndex = 0;
+      currentUrl = urls.first;
+      _loadEpisode(currentUrl, widget.currentTopic);
+    } else if (widget.Id != null && widget.Id!.isNotEmpty) {
+      currentUrl = widget.Id!;
+      _loadEpisode(currentUrl, widget.currentTopic);
     } else {
       Get.back();
     }
   }
 
-  Future<void> _loadEpisode(String id) async {
-    if (id.isEmpty) return;
-    currentEpisodeId = id;
-    print('Loading Episode ID: $id');
-    await audioPlayApiController.audioPlayApiMethod(id);
+  // Main Load Episode → First Audio → Then Search Text
+  Future<void> _loadEpisode(String url, String topic) async {
+    if (url.isEmpty) return;
+
+    currentUrl = url;
+    print('Loading Podcast URL: $url | Topic: $topic');
+
+    // Step 1: Load & Play Audio
+    await audioController.audioPlayApiMethod(url, topic);
+
+    // Step 2: After audio loads → Get job_id and call Search Text API
+    final episodeResponse = audioController.podcastResponse.value;
+    final jobId = episodeResponse?.jobId;
+
+    if (jobId != null && jobId.isNotEmpty) {
+      print("Job ID found: $jobId → Calling Search Text API");
+      await searchTextController.fetchTranscription(jobId);
+    } else {
+      print("No job_id found. Transcription might not be ready yet.");
+    }
   }
 
   Future<void> _playNext() async {
-    final ids = widget.episodeIds ?? [];
-    if (ids.isEmpty || currentIndex >= ids.length - 1) return;
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isEmpty || currentIndex >= urls.length - 1) return;
+
     currentIndex++;
-    await _loadEpisode(ids[currentIndex]);
+    await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
 
   Future<void> _playPrevious() async {
-    final ids = widget.episodeIds ?? [];
-    if (ids.isEmpty || currentIndex <= 0) return;
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isEmpty || currentIndex <= 0) return;
+
     currentIndex--;
-    await _loadEpisode(ids[currentIndex]);
+    await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
 
   String _format(int seconds) {
@@ -92,7 +114,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              const CustomAppBar(title: Text('')),
+              // Dynamic Title from Audio Controller
+              Obx(() {
+                final episode = audioController.podcastResponse.value;
+                final title = episode?.title ?? 'Loading...';
+                return CustomAppBar(title: Text(title));
+              }),
+
               const SizedBox(height: 5),
 
               Expanded(
@@ -100,47 +128,37 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Obx(() => audioPlayApiController.isLoading.value
+                      // Audio Loading
+                      Obx(() => audioController.isLoading.value
                           ? const Padding(
                         padding: EdgeInsets.all(20),
                         child: CircularProgressIndicator(color: kTeal),
                       )
                           : const SizedBox()),
-                      Obx(() => audioPlayApiController.errorMessage.value != null
-                          ? Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(
-                          audioPlayApiController.errorMessage.value!,
-                          style: const TextStyle(color: Colors.red, fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
+
+                      // Audio Error
+                      Obx(() => audioController.errorMessage.value != null
+                          ? Text(audioController.errorMessage.value!, style: const TextStyle(color: Colors.red))
                           : const SizedBox()),
 
+                      // Album Art
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Obx(() {
-                          final item = audioPlayApiController.chooseInterestItem.value;
-                          final imageUrl = item?.image ?? '';
+                          final imageUrl = audioController.podcastResponse.value?.imageUrl ?? '';
                           return Image.network(
                             imageUrl,
                             width: 300,
                             height: 320,
                             fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                width: 300,
-                                height: 320,
-                                color: kTeal.withOpacity(0.12),
-                                child: const Center(child: CircularProgressIndicator(color: kTeal)),
-                              );
-                            },
+                            loadingBuilder: (_, child, progress) => progress == null
+                                ? child
+                                : Container(color: kTeal.withOpacity(0.1), child: const Center(child: CircularProgressIndicator(color: kTeal))),
                             errorBuilder: (_, __, ___) => Container(
                               width: 300,
                               height: 320,
-                              color: kTeal.withOpacity(0.12),
-                              child: const Icon(Icons.image_not_supported, size: 80, color: kTeal),
+                              color: kTeal.withOpacity(0.1),
+                              child: const Icon(Icons.podcasts, size: 80, color: kTeal),
                             ),
                           );
                         }),
@@ -148,92 +166,73 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
                       const SizedBox(height: 30),
 
+                      // Title + Description
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Row(
                           children: [
                             Expanded(
                               child: Obx(() {
-                                final item = audioPlayApiController.chooseInterestItem.value;
+                                final episode = audioController.podcastResponse.value;
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item?.titleOriginal ?? 'Loading...',
-                                      maxLines: 1,
+                                      episode?.title ?? 'Unknown Episode',
+                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      item?.podcast?.titleOriginal ?? 'Unknown Podcast',
-                                      maxLines: 1,
+                                      episode?.description ?? 'No description',
+                                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                                      maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 16),
                                     ),
                                   ],
                                 );
                               }),
                             ),
-                            Obx(() => Visibility(
-                              visible: audioSummaryApiController.isLoading.value == false,
-                              replacement: const Center(
-                                child: Text(
-                                  "Please wait...",
-                                  style: TextStyle(color: Colors.red, fontSize: 14),
-                                ),
-                              ),
-                              child: IconButton(
-                                onPressed: audioSummaryApiController.isLoading.value ? null : _summaryApiMethod, // Disable button while loading
-                                icon: Image.asset(
-                                  'assets/icons/menu.png',
-                                  width: 26,
-                                  height: 26,
-                                  color: kTeal,
-                                ),
-                              ),
-                            )),
+                            IconButton(
+                              onPressed: _summaryApiMethod,
+                              icon: Image.asset('assets/icons/menu.png', width: 26, height: 26, color: kTeal),
+                            ),
                           ],
                         ),
                       ),
 
                       const SizedBox(height: 40),
 
+                      // Progress Bar
                       Obx(() {
-                        final durSec = audioPlayApiController.duration.value.inSeconds;
-                        final posSec = audioPlayApiController.position.value.inSeconds;
+                        final durSec = audioController.duration.value.inSeconds;
+                        final posSec = audioController.position.value.inSeconds;
                         final progress = durSec > 0 ? posSec / durSec : 0.0;
 
                         return Column(
                           children: [
-                            Container(
-                              constraints: const BoxConstraints(maxHeight: 80),
-                              child: WaveformProgressBar(
-                                progress: progress,
-                                onChanged: audioPlayApiController.seekTo,
-                                barCount: 80,
-                                preferredBarWidth: 3,
-                                gap: 2,
-                                maxBarHeight: 48,
-                                activeColor: kTeal,
-                                inactiveColor: kTeal.withOpacity(0.25),
-                                thumbRadius: 7,
-                              ),
+                            WaveformProgressBar(
+                              progress: progress,
+                              onChanged: audioController.seekTo,
+                              activeColor: kTeal,
+                              inactiveColor: kTeal.withOpacity(0.25),
                             ),
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(_format(posSec), style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                                Text(_format(durSec), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(_format(posSec), style: const TextStyle(color: Colors.grey)),
+                                Text(_format(durSec), style: const TextStyle(color: Colors.grey)),
                               ],
                             ),
                           ],
                         );
                       }),
 
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 30),
 
+                      // Player Controls
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -242,18 +241,66 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                           Container(
                             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: kTeal, width: 2)),
                             child: IconButton(
-                              onPressed: audioPlayApiController.togglePlayPause,  // <--- Play/Pause কাজ করবে
-                              icon: Obx(() => Icon(
-                                audioPlayApiController.isPlaying.value ? Icons.pause : Icons.play_arrow,
-                                size: 30,
-                                color: kTeal,
-                              )),
-                              padding: const EdgeInsets.all(12),
+                              onPressed: audioController.togglePlayPause,
+                              icon: Obx(() => Icon(audioController.isPlaying.value ? Icons.pause : Icons.play_arrow, size: 30, color: kTeal)),
                             ),
                           ),
                           IconButton(onPressed: _playNext, icon: const Icon(Icons.skip_next, size: 30, color: kTeal)),
                           IconButton(onPressed: () {}, icon: Image.asset('assets/icons/repeat.png', width: 26, height: 26, color: kTeal)),
                         ],
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Search Result Box (from SearchTextApiControllers)
+                      const Align(
+                        alignment: Alignment.topLeft,
+                        child: Text("Key Information Summary", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4)),
+                            ],
+                          ),
+                          child: Obx(() {
+                            if (searchTextController.isLoading.value) {
+                              return const Center(
+                                  child: CircularProgressIndicator(color: kTeal));
+                            }
+
+                            final result = searchTextController.transcriptionResult.value;
+
+                            if (result == null ||
+                                result.combinedSummary == null ||
+                                result.combinedSummary!.trim().isEmpty) {
+                              return const Text(
+                                "Summary is being generated... Please wait",
+                                style: TextStyle(
+                                    color: Colors.grey, fontStyle: FontStyle.italic),
+                                textAlign: TextAlign.center,
+                              );
+                            }
+
+                            return Text(
+                              result.combinedSummary!,
+                              style: const TextStyle(
+                                  fontSize: 15, height: 1.6, color: Colors.black87),
+                            );
+                          }),
+                        ),
                       ),
 
                       const SizedBox(height: 20),
@@ -268,28 +315,23 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
+  // Summary Button (old one)
   Future<void> _summaryApiMethod() async {
-    final item = audioPlayApiController.chooseInterestItem.value;
-    if (item?.audio == null || item!.audio!.isEmpty) {
-      Get.snackbar("Error", "No audio URL found");
+    final audioUrl = audioController.podcastResponse.value?.audioUrl;
+    if (audioUrl == null || audioUrl.isEmpty) {
+      Get.snackbar("Error", "Audio not ready", backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
-
-    String audioUrl = item.audio!;
-    print("-------$audioUrl");
-
-    bool isSuccess = await audioSummaryApiController.audioSummaryApiController(audioUrl);
-
-    if (isSuccess) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => PodcastDescriptionScreen(urls: audioUrl,)));
-    } else {
-      String error = audioSummaryApiController.errorMessage ?? "Failed to generate summary";
-      Get.snackbar("Error", error, backgroundColor: Colors.red, colorText: Colors.white);
+    final success = await audioSummaryApiController.audioSummaryApiController(audioUrl);
+    if (success) {
+      //Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
     }
   }
 }
 
-// WaveformProgressBar
+// WaveformProgressBar unchanged — রেখে দে
+
+// WaveformProgressBar (Unchanged)
 class WaveformProgressBar extends StatelessWidget {
   const WaveformProgressBar({
     super.key,

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
-
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
-import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
 import '../controller/search_text_api_controller.dart';
@@ -28,7 +26,7 @@ class MusicPlayerScreen extends StatefulWidget {
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   late final AudioPlayApiControllers audioController;
-  late final SearchTextApiControllers searchTextController;
+  late final SearchTextApiController searchTextController;
 
   final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
 
@@ -45,9 +43,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         : Get.put(AudioPlayApiControllers());
 
     // 2. Search Text Controller
-    searchTextController = Get.isRegistered<SearchTextApiControllers>()
-        ? Get.find<SearchTextApiControllers>()
-        : Get.put(SearchTextApiControllers());
+    searchTextController = Get.isRegistered<SearchTextApiController>()
+        ? Get.find<SearchTextApiController>()
+        : Get.put(SearchTextApiController());
 
     // Load first episode
     final urls = widget.episodeUrls ?? [];
@@ -79,7 +77,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     if (jobId != null && jobId.isNotEmpty) {
       print("Job ID found: $jobId → Calling Search Text API");
-      await searchTextController.searchTextApiMethods(jobId: jobId);
+      await searchTextController.fetchTranscription(jobId);
     } else {
       print("No job_id found. Transcription might not be ready yet.");
     }
@@ -271,28 +269,35 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.grey.shade300, width: 1.5),
                             boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4)),
+                              BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Obx(() {
                             if (searchTextController.isLoading.value) {
-                              return const Center(child: CircularProgressIndicator(color: kTeal));
+                              return const Center(
+                                  child: CircularProgressIndicator(color: kTeal));
                             }
 
-                            final summary = searchTextController.topicSummaryModel.value;
-                            if (summary?.combinedSummary == null || summary!.combinedSummary!.isEmpty) {
+                            final result = searchTextController.transcriptionResult.value;
+
+                            if (result == null ||
+                                result.combinedSummary == null ||
+                                result.combinedSummary!.trim().isEmpty) {
                               return const Text(
                                 "Summary is being generated... Please wait",
-                                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                                style: TextStyle(
+                                    color: Colors.grey, fontStyle: FontStyle.italic),
                                 textAlign: TextAlign.center,
                               );
                             }
 
                             return Text(
-                              summary.combinedSummary!,
-                              style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87),
-                              maxLines: 8,
-                              overflow: TextOverflow.ellipsis,
+                              result.combinedSummary!,
+                              style: const TextStyle(
+                                  fontSize: 15, height: 1.6, color: Colors.black87),
                             );
                           }),
                         ),
@@ -319,7 +324,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
     final success = await audioSummaryApiController.audioSummaryApiController(audioUrl);
     if (success) {
-      Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
+      //Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
     }
   }
 }

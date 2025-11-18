@@ -4,7 +4,7 @@ import '../../../../core/network_caller/network_config.dart';
 import '../../../../core/network_path/natwork_path.dart';
 import '../model/search_text_model.dart';
 
-class SearchTextApiController extends GetxController {
+/*class SearchTextApiController extends GetxController {
   var topicSummaryModel = Rxn<TopicSummaryModel>();
   var isSuccess = false.obs;
   var isLoading = false.obs;
@@ -89,70 +89,97 @@ class SearchTextApiController extends GetxController {
     _errorMessage = null;
     update();
   }
-}
+}*/
 
 
-class SearchTextApiControllers extends GetxController {
-  var topicSummaryModel = Rxn<TranscriptionResult>();
-  var isSuccess = false.obs;
-  var isLoading = false.obs;
+// lib/feature/media/audio/controller/search_text_api_controller.dart
 
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
 
-  /// Only GET request - backend auto-transcribes if needed
-  Future<bool> searchTextApiMethods({
-    required String jobId,
-  }) async {
+
+class SearchTextApiController extends GetxController {
+  final Rxn<TranscriptionResult> transcriptionResult = Rxn<TranscriptionResult>();
+  final RxBool isLoading = false.obs;
+  final RxBool isSuccess = false.obs;
+  final RxString errorMessage = ''.obs;
+
+  /// jobId দিয়ে ট্রান্সক্রিপশন ফেচ করুন + Auto Polling (max 60 seconds)
+  Future<void> fetchTranscription(String jobId) async {
     if (jobId.isEmpty) {
-      _errorMessage = 'Job ID missing';
-      isSuccess(false);
-      return false;
+      errorMessage.value = 'Invalid job ID';
+      isSuccess.value = false;
+      return;
     }
 
-    isLoading(true);
-    isSuccess(false);
-    _errorMessage = null;
-    topicSummaryModel.value = null;
+    // Reset state
+    isLoading.value = true;
+    errorMessage.value = '';
+    transcriptionResult.value = null;
+    isSuccess.value = false;
 
-    try {
-      // Correct endpoint: /podcast/transcription + job_id
+    int attempt = 0;
+    const maxAttempts = 20;        // 20 × 3s = 60 seconds max wait
+    const delaySeconds = 3;
 
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        final response = await NetworkCall.getRequest(
+          url: Urls.searchingTexts(jobId),
+        );
 
-      final response = await NetworkCall.getRequest(url: Urls.searchingTexts(jobId));
+        print("Polling transcription (Attempt $attempt): ${Urls.searchingTexts(jobId)}");
 
-      print("Transcription Check URL: ${Urls.searchingTexts(jobId)}");
-      print("Response: ${response.responseData}");
+        if (response.isSuccess && response.responseData != null) {
+          final data = response.responseData!;
 
-      if (response.isSuccess && response.responseData != null) {
-        final jsonData = response.responseData!;
-        topicSummaryModel.value = TranscriptionResult.fromJson(jsonData);
-        isSuccess(true);
-        return true;
-      } else {
-        final error = response.responseData?['detail'] ?? 'Not ready';
-        if (error.toString().contains('processing') || response.statusCode == 404) {
-          _errorMessage = 'Transcription is still processing...';
-        } else {
-          _errorMessage = error.toString();
+          // Success: transcription ready
+          if (data is Map<String, dynamic> && (data.containsKey('transcription') || data.containsKey('text'))) {
+            transcriptionResult.value = TranscriptionResult.fromJson(data);
+            isSuccess.value = true;
+            isLoading.value = false;
+            print("Transcription ready after $attempt attempts!");
+            return;
+          }
         }
-        isSuccess(false);
-        return false;
+
+        // Still processing or 404
+        final status = response.statusCode;
+        final detail = response.responseData?['detail']?.toString() ?? '';
+
+        if (status == 404 || detail.contains('processing') || detail.contains('not found') || detail.contains('pending')) {
+          print("Still processing... retrying in $delaySeconds seconds");
+          await Future.delayed(Duration(seconds: delaySeconds));
+          continue; // Retry
+        } else {
+          // Real error
+          errorMessage.value = detail.isNotEmpty ? detail : 'Failed to load transcription';
+          isSuccess.value = false;
+          isLoading.value = false;
+          return;
+        }
+      } catch (e) {
+        print("Network error during polling: $e");
+        errorMessage.value = 'Connection error. Retrying...';
+        await Future.delayed(Duration(seconds: delaySeconds));
       }
-    } catch (e) {
-      _errorMessage = 'Error: $e';
-      print(e);
-      return false;
-    } finally {
-      isLoading(false);
-      update();
     }
+
+    // Timeout
+    errorMessage.value = 'Transcription took too long. Please try again later.';
+    isLoading.value = false;
+    isSuccess.value = false;
   }
 
-  void clearSearch() {
-    topicSummaryModel.value = null;
-    isSuccess(false);
-    _errorMessage = null;
-    update();
+  void clear() {
+    transcriptionResult.value = null;
+    isSuccess.value = false;
+    errorMessage.value = '';
+    isLoading.value = false;
+  }
+
+  @override
+  void onClose() {
+    clear();
+    super.onClose();
   }
 }

@@ -27,6 +27,10 @@ class Urls {
     final encoded=Uri.encodeComponent(url);
     return '$_baseUrl/search-any-topic?audio_url=$encoded&topic=$text';
   }
+  static String searchingTexts(String id){
+    final encoded=Uri.encodeComponent(id);
+    return '$_baseUrl/podcast/transcription/$encoded';
+  }
 // network_path.dart
   static String audioSummary(String audioUrl) {
     final encoded = Uri.encodeComponent(audioUrl);
@@ -61,6 +65,23 @@ class Urls {
         '&limit=$pageSize';
   }
 
+  static String quickPopularTopic({
+    required String topic,      // ← topic, not interest
+    int page = 1,
+    int pageSize = 10,
+  }) {
+    final offset = (page - 1) * pageSize;
+    final q = Uri.encodeComponent(topic.trim());
+
+    return '$_baseUrl/podcasts/popular?'
+        'topic=$q'
+        '&type=episode'
+        '&language=English'
+        '&len_min=5'
+        '&len_max=120'
+        '&offset=$offset'
+        '&page_size=$pageSize';
+  }
   /// Builds the API URL for the home/feed screen
   /// - If [interest] is null, empty, or whitespace → returns popular podcasts
   /// - Otherwise → searches podcasts by the given interest/keyword

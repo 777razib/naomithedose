@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/app_colors.dart';
-import '../../choose interest/controller/choose_interest_api_controller.dart';
 import '../../home/widget/audio_image_widget.dart';
 import '../../media/audio/screen/audio_play.dart';
+import '../controller/searching_api_controller.dart'; // ← কন্ট্রোলার
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,7 +16,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ChooseInterestApiController apiCtrl = Get.put(ChooseInterestApiController());
+  final SearchingApiController apiCtrl = Get.put(SearchingApiController());
 
   bool isListView = true;
   String _currentQuery = "Business";
@@ -44,10 +44,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _searchInApi(String query) async {
     _currentQuery = query;
-    await apiCtrl.chooseInterestApiMethod(interest: query, loadMore: false);
+    await apiCtrl.searchingApiMethod(interest: query, loadMore: false);
   }
 
-  // Pull to refresh
   Future<void> _onRefresh() async {
     await _searchInApi(_currentQuery);
   }
@@ -140,17 +139,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 16),
 
-            // RESULTS + PULL TO REFRESH (NO RETRY BUTTON)
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: Obx(() {
-                  // First time loading
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Show error only when NOT loading
                   if (apiCtrl.errorMessage.isNotEmpty && !apiCtrl.isLoading.value) {
                     return Center(
                       child: ListView(
@@ -159,23 +155,14 @@ class _SearchScreenState extends State<SearchScreen> {
                           const SizedBox(height: 100),
                           const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
                           const SizedBox(height: 16),
-                          const Text(
-                            "No internet connection",
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
-                            textAlign: TextAlign.center,
-                          ),
+                          const Text("No internet connection", style: TextStyle(color: Colors.grey, fontSize: 16), textAlign: TextAlign.center),
                           const SizedBox(height: 8),
-                          Text(
-                            "Pull down to retry",
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
+                          Text("Pull down to retry", style: TextStyle(color: Colors.grey.shade600, fontSize: 14), textAlign: TextAlign.center),
                         ],
                       ),
                     );
                   }
 
-                  // No results
                   if (apiCtrl.episodes.isEmpty) {
                     return Center(
                       child: ListView(
@@ -192,7 +179,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     );
                   }
 
-                  // Show List or Grid
                   return isListView ? _buildListView() : _buildGridView();
                 }),
               ),
@@ -203,7 +189,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // LIST VIEW
   Widget _buildListView() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -211,25 +196,24 @@ class _SearchScreenState extends State<SearchScreen> {
       itemBuilder: (context, i) {
         if (i == apiCtrl.episodes.length) {
           apiCtrl.loadNextPage();
-          return const Padding(
-            padding: EdgeInsets.all(12),
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
         }
 
-        final item = apiCtrl.episodes[i];
+        final podcast = apiCtrl.episodes[i];
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: AudioImageWidget(
-            title: item.titleOriginal ?? "Untitled",
-            subTitle: "${_formatDuration(item.audioLengthSec)} • ${item.podcast?.publisherOriginal ?? ""}",
-            date: _formatDate(item.pubDateMs),
-            episodes: "Episodes: 13",
-            imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
+            title: podcast.name,
+            subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} episodes",
+            date: _formatDate(podcast.releaseDate),
+            episodes: "${podcast.episodeCount} episodes",
+            imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
             onTap: () {
+              // আপনার প্লেয়ারে যাওয়ার জন্য podcastId বা feedUrl দিন
               Get.to(() => MusicPlayerScreen(
-                episodeUrls: [item.id.toString()],
-                currentTopic: item.id.toString(),
+                episodeUrls: [podcast.feedUrl], // অথবা podcast.itunesUrl
+                currentTopic: podcast.name,
               ));
             },
           ),
@@ -238,7 +222,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // GRID VIEW
   Widget _buildGridView() {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -255,36 +238,32 @@ class _SearchScreenState extends State<SearchScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final item = apiCtrl.episodes[i];
+        final podcast = apiCtrl.episodes[i];
+
         return AudioImageWidget(
-          title: item.titleOriginal ?? "Untitled",
-          subTitle: "${_formatDuration(item.audioLengthSec)} • ${item.podcast?.publisherOriginal ?? ""}",
-          date: _formatDate(item.pubDateMs),
-          episodes: "Episodes: 13",
-          imageUrl: item.thumbnail ?? item.image ?? "https://via.placeholder.com/327x144",
+          title: podcast.name,
+          subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} eps",
+          date: _formatDate(podcast.releaseDate),
+          episodes: "${podcast.episodeCount} eps",
+          imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
           onTap: () {
+            print("-----${podcast.feedUrl}");
+            print("-----${podcast.name}");
             Get.to(() => MusicPlayerScreen(
-              episodeUrls: [item.id.toString()],
-              currentTopic: item.id.toString(),
+              episodeUrls: [podcast.feedUrl],
+              currentTopic: podcast.name,
             ));
           },
         );
       },
     );
   }
-
-  // Helper: format duration
-  String _formatDuration(int? sec) {
-    if (sec == null || sec <= 0) return "";
-    final m = sec ~/ 60;
-    final s = sec % 60;
-    return "${m}m ${s}s";
-  }
-
-  // Helper: format date
-  String _formatDate(int? ms) {
-    if (ms == null) return '';
-    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-    return DateFormat('MMM dd, yyyy').format(dt);
+  String _formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return "Unknown date";
+    }
   }
 }

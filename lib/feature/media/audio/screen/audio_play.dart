@@ -485,14 +485,16 @@ class WaveformProgressBar extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
-import 'package:flutter_html/flutter_html.dart'; // নতুন
-import 'package:url_launcher/url_launcher_string.dart'; // লিঙ্ক ক্লিকের জন্য
+import 'package:flutter_html/flutter_html.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
 import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
 import '../controller/search_text_api_controller.dart';
+
 const kTeal = Color(0xFF39CCCC);
+
 class MusicPlayerScreen extends StatefulWidget {
   const MusicPlayerScreen({
     super.key,
@@ -500,18 +502,23 @@ class MusicPlayerScreen extends StatefulWidget {
     this.currentTopic = 'general',
     this.Id,
   });
+
   final List<String>? episodeUrls;
   final String currentTopic;
   final String? Id;
+
   @override
   State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
 }
+
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   late final AudioPlayApiControllers audioController;
   late final SearchTextApiController searchTextController;
   final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
+
   int currentIndex = 0;
   String currentUrl = '';
+
   @override
   void initState() {
     super.initState();
@@ -521,6 +528,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     searchTextController = Get.isRegistered<SearchTextApiController>()
         ? Get.find<SearchTextApiController>()
         : Get.put(SearchTextApiController());
+
     final urls = widget.episodeUrls ?? [];
     if (urls.isNotEmpty) {
       currentIndex = 0;
@@ -533,6 +541,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       Get.back();
     }
   }
+
   Future<void> _loadEpisode(String url, String topic) async {
     if (url.isEmpty) return;
     currentUrl = url;
@@ -542,23 +551,27 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       await searchTextController.fetchTranscription(jobId);
     }
   }
+
   Future<void> _playNext() async {
     final urls = widget.episodeUrls ?? [];
     if (urls.isEmpty || currentIndex >= urls.length - 1) return;
     currentIndex++;
     await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
+
   Future<void> _playPrevious() async {
     final urls = widget.episodeUrls ?? [];
     if (urls.isEmpty || currentIndex <= 0) return;
     currentIndex--;
     await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
+
   String _format(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '$m:${s.toString().padLeft(2, '0')}';
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -568,33 +581,30 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // ==================== Title (Dynamic) ====================
+              // ==================== Dynamic Title ====================
               Obx(() {
                 final episode = audioController.podcastResponse.value;
                 return CustomAppBar(title: Text(episode?.title ?? 'Loading...'));
               }),
               const SizedBox(height: 10),
+
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Audio Loading Indicator
+                      // Loading & Error
                       Obx(() => audioController.isLoading.value
-                          ? const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(color: kTeal),
-                      )
+                          ? const Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: kTeal))
                           : const SizedBox()),
-                      // Audio Error
                       Obx(() => audioController.errorMessage.value != null && audioController.errorMessage.value!.isNotEmpty
                           ? Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(audioController.errorMessage.value!,
-                            style: const TextStyle(color: Colors.red)),
+                        child: Text(audioController.errorMessage.value!, style: const TextStyle(color: Colors.red)),
                       )
                           : const SizedBox()),
-                      // ==================== Album Art ====================
+
+                      // Album Art
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Obx(() {
@@ -606,10 +616,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             fit: BoxFit.cover,
                             loadingBuilder: (_, child, progress) => progress == null
                                 ? child
-                                : Container(
-                              color: kTeal.withOpacity(0.1),
-                              child: const Center(child: CircularProgressIndicator(color: kTeal)),
-                            ),
+                                : Container(color: kTeal.withOpacity(0.1), child: const Center(child: CircularProgressIndicator(color: kTeal))),
                             errorBuilder: (_, __, ___) => Container(
                               width: 300,
                               height: 320,
@@ -620,7 +627,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                         }),
                       ),
                       const SizedBox(height: 30),
-                      // ==================== Title + HTML Description ====================
+
+                      // ==================== Title + Expandable Description ====================
+                      // ==================== Title + Expandable Description ====================
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Row(
@@ -630,10 +639,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                 final episode = audioController.podcastResponse.value;
                                 final String title = episode?.title ?? 'Unknown Episode';
                                 final String descriptionHtml = episode?.description ?? 'No description';
+
+                                // Expand state
+                                final RxBool isDescExpanded = false.obs;
+
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Title
                                     Text(
                                       title,
                                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -641,27 +653,102 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 12),
-                                    // HTML Description
-                                    Html(
-                                      data: descriptionHtml,
-                                      style: {
-                                        "body": Style(
-                                          fontSize: FontSize(14),
-                                          color: Colors.grey[700],
-                                          margin: Margins.zero,
-                                          padding: HtmlPaddings.zero,
-                                        ),
-                                        "p": Style(margin: Margins(top: Margin(6), bottom: Margin(6))),
-                                        "a": Style(color: kTeal, textDecoration: TextDecoration.underline),
-                                      },
-                                      onLinkTap: (url, _, __) {
-                                        if (url != null) launchUrlString(url);
-                                      },
-                                    ),
+
+                                    // Description with 3-line limit + expand
+                                    Obx(() {
+                                      if (descriptionHtml.trim().isEmpty || descriptionHtml == '<p><br></p>') {
+                                        return const Text('No description available', style: TextStyle(color: Colors.grey));
+                                      }
+
+                                      // Check if content is longer than ~3 lines
+                                      final bool isLongDescription = descriptionHtml.length > 300; // rough check
+
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Collapsed: fixed height, Expanded: full
+                                          SizedBox(
+                                            height: isDescExpanded.value ? null : 72, // ~3 lines at fontSize 14
+                                            child: Html(
+                                              data: descriptionHtml,
+                                              style: {
+                                                "body": Style(
+                                                  fontSize: FontSize(14),
+                                                  color: Colors.grey[700],
+                                                  margin: Margins.zero,
+                                                  padding: HtmlPaddings.zero,
+                                                ),
+                                                "p": Style(margin: Margins(top: Margin(6), bottom: Margin(6))),
+                                                "a": Style(color: kTeal, textDecoration: TextDecoration.underline),
+                                              },
+                                              onLinkTap: (url, _, __) => url != null ? launchUrlString(url) : null,
+                                            ),
+                                          ),
+
+                                          // Show "আরও দেখুন" only if collapsed AND content is actually long
+                                          if (!isDescExpanded.value && isLongDescription)
+                                            GestureDetector(
+                                              onTap: () {
+                                                Get.dialog(
+                                                  Dialog(
+                                                    backgroundColor: const Color(0xffFFFFF3),
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(20.0), // এখানে ঠিক করা হয়েছে
+                                                      child: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            title,
+                                                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                                          ),
+                                                          const SizedBox(height: 16),
+                                                          SingleChildScrollView(
+                                                            child: Html(
+                                                              data: descriptionHtml,
+                                                              style: {
+                                                                "body": Style(fontSize: FontSize(15), color: Colors.black87),
+                                                                "a": Style(color: kTeal, textDecoration: TextDecoration.underline),
+                                                              },
+                                                              onLinkTap: (url, _, __) => url != null ? launchUrlString(url) : null,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 20),
+                                                          ElevatedButton(
+                                                            onPressed: () => Get.back(),
+                                                            style: ElevatedButton.styleFrom(backgroundColor: kTeal),
+                                                            child: const Text("Close", style: TextStyle(color: Colors.white)),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(top: 8),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      "See more",
+                                                      style: TextStyle(color: kTeal, fontWeight: FontWeight.w600, fontSize: 14),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(Icons.keyboard_arrow_down_rounded, color: kTeal, size: 22),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    }),
                                   ],
                                 );
                               }),
                             ),
+
+                            // Menu Icon
                             IconButton(
                               onPressed: _summaryApiMethod,
                               icon: Image.asset('assets/icons/menu.png', width: 26, height: 26, color: kTeal),
@@ -670,32 +757,26 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                         ),
                       ),
                       const SizedBox(height: 40),
-                      // ==================== Progress Bar ====================
+
+                      // Progress Bar
                       Obx(() {
                         final durSec = audioController.duration.value.inSeconds;
                         final posSec = audioController.position.value.inSeconds;
                         final progress = durSec > 0 ? posSec / durSec : 0.0;
                         return Column(
                           children: [
-                            WaveformProgressBar(
-                              progress: progress,
-                              onChanged: audioController.seekTo,
-                              activeColor: kTeal,
-                              inactiveColor: kTeal.withOpacity(0.25),
-                            ),
+                            WaveformProgressBar(progress: progress, onChanged: audioController.seekTo, activeColor: kTeal, inactiveColor: kTeal.withOpacity(0.25)),
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(_format(posSec), style: const TextStyle(color: Colors.grey)),
-                                Text(_format(durSec), style: const TextStyle(color: Colors.grey)),
-                              ],
+                              children: [Text(_format(posSec), style: const TextStyle(color: Colors.grey)), Text(_format(durSec), style: const TextStyle(color: Colors.grey))],
                             ),
                           ],
                         );
                       }),
                       const SizedBox(height: 30),
-                      // ==================== Player Controls ====================
+
+                      // Player Controls
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -713,11 +794,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                         ],
                       ),
                       const SizedBox(height: 40),
-                      // ==================== Key Information Summary ====================
-                      const Align(
-                        alignment: Alignment.topLeft,
-                        child: Text("Key Information Summary", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ),
+
+                      // ==================== Key Information Summary (with **highlight**) ====================
+                      const Align(alignment: Alignment.topLeft, child: Text("Key Information Summary", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.topLeft,
@@ -728,7 +807,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.grey.shade300, width: 1.5),
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, 4))],
+                            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Obx(() {
                             if (searchTextController.isLoading.value) {
@@ -736,46 +815,30 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             }
                             final result = searchTextController.transcriptionResult.value;
                             if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
-                              return const Text(
-                                "Summary is being generated... Please wait",
-                                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 15),
-                                textAlign: TextAlign.center,
-                              );
+                              return const Text("Summary is being generated... Please wait", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 15), textAlign: TextAlign.center);
                             }
-                            final String summary = result.combinedSummary!.trim();
-                            // Detect truncated summary
-                            bool isTruncated = summary.length < 250 || !RegExp(r'[.!?…]"?$').hasMatch(summary);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  summary,
-                                  style: const TextStyle(fontSize: 15.5, height: 1.7, color: Colors.black87),
-                                ),
-                                /*if (isTruncated) ...[
-                                  const SizedBox(height: 20),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.shade50,
-                                      border: Border.all(color: Colors.orange.shade300),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 22),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            "Summary appears incomplete. Regenerating in background...",
-                                            style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13.5),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],*/
-                              ],
+
+                            final String rawSummary = result.combinedSummary!.trim();
+
+                            List<TextSpan> buildHighlightedSpans(String text) {
+                              List<TextSpan> spans = [];
+                              RegExp boldRegex = RegExp(r'\*\*([^*]+)\*\*');
+                              int lastEnd = 0;
+
+                              for (var match in boldRegex.allMatches(text)) {
+                                if (match.start > lastEnd) spans.add(TextSpan(text: text.substring(lastEnd, match.start)));
+                                spans.add(TextSpan(text: match.group(1), style: const TextStyle(color: kTeal, fontWeight: FontWeight.bold, fontSize: 15.5)));
+                                lastEnd = match.end;
+                              }
+                              if (lastEnd < text.length) spans.add(TextSpan(text: text.substring(lastEnd)));
+                              return spans;
+                            }
+
+                            return RichText(
+                              text: TextSpan(
+                                style: const TextStyle(fontSize: 15.5, height: 1.7, color: Colors.black87),
+                                children: buildHighlightedSpans(rawSummary),
+                              ),
                             );
                           }),
                         ),
@@ -791,6 +854,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       ),
     );
   }
+
   Future<void> _summaryApiMethod() async {
     final audioUrl = audioController.podcastResponse.value?.audioUrl;
     if (audioUrl == null || audioUrl.isEmpty) {
@@ -803,10 +867,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 }
-// WaveformProgressBar (আগের মতোই রাখো – কোনো চেঞ্জ লাগবে না)
+
+// ==================== WaveformProgressBar (unchanged) ====================
 class WaveformProgressBar extends StatelessWidget {
-  // ... তোমার আগের কোডটা অপরিবর্তিত থাকবে
-  // (উপরের কোডে আমি শুধু শেষে রেখেছি, তুমি কপি করে নাও)
   const WaveformProgressBar({
     super.key,
     required this.progress,
@@ -819,6 +882,7 @@ class WaveformProgressBar extends StatelessWidget {
     this.inactiveColor = Colors.grey,
     this.thumbRadius = 6.0,
   });
+
   final double progress;
   final ValueChanged<double> onChanged;
   final int barCount;
@@ -828,6 +892,7 @@ class WaveformProgressBar extends StatelessWidget {
   final Color activeColor;
   final Color inactiveColor;
   final double thumbRadius;
+
   List<double> _sampleHeights() {
     final List<double> h = [];
     for (int i = 0; i < barCount; i++) {
@@ -840,6 +905,7 @@ class WaveformProgressBar extends StatelessWidget {
     }
     return h;
   }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -848,10 +914,12 @@ class WaveformProgressBar extends StatelessWidget {
         final double barWidth = (totalWidth - gap * (barCount - 1)) / barCount;
         final bars = _sampleHeights();
         final activeCount = (progress * barCount).clamp(0, barCount.toDouble()).floor();
+
         void _seekFromDx(double dx) {
           final p = (dx / totalWidth).clamp(0.0, 1.0);
           onChanged(p);
         }
+
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (d) => _seekFromDx(d.localPosition.dx),
@@ -868,21 +936,14 @@ class WaveformProgressBar extends StatelessWidget {
                     child: Container(
                       width: barWidth,
                       height: h,
-                      decoration: BoxDecoration(
-                        color: isActive ? activeColor : inactiveColor,
-                        borderRadius: BorderRadius.circular(barWidth),
-                      ),
+                      decoration: BoxDecoration(color: isActive ? activeColor : inactiveColor, borderRadius: BorderRadius.circular(barWidth)),
                     ),
                   );
                 }),
               ),
               Positioned(
                 left: (totalWidth * progress) - thumbRadius,
-                child: Container(
-                  width: thumbRadius * 2,
-                  height: thumbRadius * 2,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: activeColor),
-                ),
+                child: Container(width: thumbRadius * 2, height: thumbRadius * 2, decoration: BoxDecoration(shape: BoxShape.circle, color: activeColor)),
               ),
             ],
           ),

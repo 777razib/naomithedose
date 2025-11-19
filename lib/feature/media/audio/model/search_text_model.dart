@@ -77,13 +77,13 @@ class TopicSummaryModel {
 
 class TranscriptionResult {
   final String? jobId;
-  final String? url;                    // Original podcast URL
+  final String? url;
   final String? title;
   final String? podcastName;
   final String? topic;
-  final String? status;                 // "completed", "processing", etc.
+  final String? status;
   final int? wordCount;
-  final String? combinedSummary;        // The big summary text
+  final String? combinedSummary;
   final int? topicMentionCount;
   final DateTime? createdAt;
   final DateTime? completedAt;
@@ -102,7 +102,6 @@ class TranscriptionResult {
     this.completedAt,
   });
 
-  /// Factory from JSON
   factory TranscriptionResult.fromJson(Map<String, dynamic> json) {
     return TranscriptionResult(
       jobId: json['job_id'] as String?,
@@ -114,16 +113,11 @@ class TranscriptionResult {
       wordCount: json['word_count'] as int?,
       combinedSummary: json['combined_summary'] as String?,
       topicMentionCount: json['topic_mention_count'] as int?,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String)
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'] as String)
-          : null,
+      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
+      completedAt: json['completed_at'] != null ? DateTime.tryParse(json['completed_at'] as String) : null,
     );
   }
 
-  /// Convert back to JSON
   Map<String, dynamic> toJson() {
     return {
       'job_id': jobId,

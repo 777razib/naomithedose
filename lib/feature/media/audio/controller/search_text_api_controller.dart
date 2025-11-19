@@ -1,4 +1,3 @@
-
 import 'package:get/get.dart';
 import '../../../../core/network_caller/network_config.dart';
 import '../../../../core/network_path/natwork_path.dart';
@@ -103,7 +102,7 @@ class SearchTextApiController extends GetxController {
   final RxString errorMessage = ''.obs;
 
   /// jobId দিয়ে ট্রান্সক্রিপশন ফেচ করুন + Auto Polling (max 60 seconds)
-  Future<void> fetchTranscription(String jobId) async {
+  Future<void> fetchTranscription(String jobId,) async {
     if (jobId.isEmpty) {
       errorMessage.value = 'Invalid job ID';
       isSuccess.value = false;
@@ -132,14 +131,12 @@ class SearchTextApiController extends GetxController {
         if (response.isSuccess && response.responseData != null) {
           final data = response.responseData!;
 
-          // Success: transcription ready
-          if (data is Map<String, dynamic> && (data.containsKey('transcription') || data.containsKey('text'))) {
-            transcriptionResult.value = TranscriptionResult.fromJson(data);
-            isSuccess.value = true;
-            isLoading.value = false;
-            print("Transcription ready after $attempt attempts!");
-            return;
-          }
+          // Success: transcription ready (parse directly as the JSON is flat)
+          transcriptionResult.value = TranscriptionResult.fromJson(data);
+          isSuccess.value = true;
+          isLoading.value = false;
+          print("Transcription ready after $attempt attempts!");
+          return;
         }
 
         // Still processing or 404

@@ -53,7 +53,8 @@ dependencies:
   flutter_easyloading: ^3.0.5
   flutter_dotenv: ^6.0.0
   just_audio: ^0.9.36
-  flutter_html: ^3.0.0
+  flutter_html: ^3.0.0-beta.2
+  url_launcher: ^6.2.0
 
 dev_dependencies:
   flutter_test:

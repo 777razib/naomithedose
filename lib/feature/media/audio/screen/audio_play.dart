@@ -1,7 +1,10 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
+
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
+import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
 import '../controller/search_text_api_controller.dart';
@@ -77,7 +80,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     if (jobId != null && jobId.isNotEmpty) {
       print("Job ID found: $jobId → Calling Search Text API");
-      await searchTextController.fetchTranscription(jobId);
+      await searchTextController.fetchTranscription( jobId);
     } else {
       print("No job_id found. Transcription might not be ready yet.");
     }
@@ -269,35 +272,89 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.grey.shade300, width: 1.5),
                             boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4)),
+                              BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Obx(() {
+                            // Loading state
                             if (searchTextController.isLoading.value) {
-                              return const Center(
-                                  child: CircularProgressIndicator(color: kTeal));
+                              return const Center(child: CircularProgressIndicator(color: kTeal));
                             }
 
                             final result = searchTextController.transcriptionResult.value;
 
-                            if (result == null ||
-                                result.combinedSummary == null ||
-                                result.combinedSummary!.trim().isEmpty) {
+                            // No result yet, or summary is empty
+                            if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
                               return const Text(
                                 "Summary is being generated... Please wait",
-                                style: TextStyle(
-                                    color: Colors.grey, fontStyle: FontStyle.italic),
+                                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                                 textAlign: TextAlign.center,
                               );
                             }
 
-                            return Text(
-                              result.combinedSummary!,
-                              style: const TextStyle(
-                                  fontSize: 15, height: 1.6, color: Colors.black87),
+                            final String summary = result.combinedSummary!.trim();
+
+                            // ──────────────────────────────────────────────────────────────
+                            // Detect incomplete/truncated summary
+                            // ──────────────────────────────────────────────────────────────
+                            bool isTruncated = false;
+                            if (summary.length < 200) { // Heuristic: very short for a full summary
+                              isTruncated = true;
+                            } else if (!RegExp(r'[.!?…]$').hasMatch(summary.trim())) {
+                              // Doesn't end with proper punctuation
+                              isTruncated = true;
+                            }
+
+                            // Show the summary (full or partial)
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  summary,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    height: 1.6,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+
+                               */
+/* // Show warning if summary is incomplete
+                                if (isTruncated) ...[
+                                  const SizedBox(height: 20),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade50,
+                                      border: Border.all(
+                                        color: Colors.orange.shade300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange.shade700,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            "Summary appears incomplete. We are regenerating it...",
+                                            style: TextStyle(
+                                              color: Colors.orange.shade800,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],*//*
+
+                              ],
                             );
                           }),
                         ),
@@ -416,6 +473,415 @@ class WaveformProgressBar extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: activeColor,
                   ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}*/
+import 'package:flutter/material.dart';
+import 'package:get/Get.dart';
+import 'dart:math' as math;
+import 'package:flutter_html/flutter_html.dart'; // নতুন
+import 'package:url_launcher/url_launcher_string.dart'; // লিঙ্ক ক্লিকের জন্য
+import 'package:naomithedose/core/widgets/custom_appbar.dart';
+import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
+import '../controller/audio_paly_api_controller.dart';
+import '../controller/audio_summary_api_controller.dart';
+import '../controller/search_text_api_controller.dart';
+const kTeal = Color(0xFF39CCCC);
+class MusicPlayerScreen extends StatefulWidget {
+  const MusicPlayerScreen({
+    super.key,
+    this.episodeUrls,
+    this.currentTopic = 'general',
+    this.Id,
+  });
+  final List<String>? episodeUrls;
+  final String currentTopic;
+  final String? Id;
+  @override
+  State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
+}
+class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
+  late final AudioPlayApiControllers audioController;
+  late final SearchTextApiController searchTextController;
+  final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
+  int currentIndex = 0;
+  String currentUrl = '';
+  @override
+  void initState() {
+    super.initState();
+    audioController = Get.isRegistered<AudioPlayApiControllers>()
+        ? Get.find<AudioPlayApiControllers>()
+        : Get.put(AudioPlayApiControllers());
+    searchTextController = Get.isRegistered<SearchTextApiController>()
+        ? Get.find<SearchTextApiController>()
+        : Get.put(SearchTextApiController());
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isNotEmpty) {
+      currentIndex = 0;
+      currentUrl = urls.first;
+      _loadEpisode(currentUrl, widget.currentTopic);
+    } else if (widget.Id != null && widget.Id!.isNotEmpty) {
+      currentUrl = widget.Id!;
+      _loadEpisode(currentUrl, widget.currentTopic);
+    } else {
+      Get.back();
+    }
+  }
+  Future<void> _loadEpisode(String url, String topic) async {
+    if (url.isEmpty) return;
+    currentUrl = url;
+    await audioController.audioPlayApiMethod(url, topic);
+    final jobId = audioController.podcastResponse.value?.jobId;
+    if (jobId != null && jobId.isNotEmpty) {
+      await searchTextController.fetchTranscription(jobId);
+    }
+  }
+  Future<void> _playNext() async {
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isEmpty || currentIndex >= urls.length - 1) return;
+    currentIndex++;
+    await _loadEpisode(urls[currentIndex], widget.currentTopic);
+  }
+  Future<void> _playPrevious() async {
+    final urls = widget.episodeUrls ?? [];
+    if (urls.isEmpty || currentIndex <= 0) return;
+    currentIndex--;
+    await _loadEpisode(urls[currentIndex], widget.currentTopic);
+  }
+  String _format(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffFFFFF3),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              // ==================== Title (Dynamic) ====================
+              Obx(() {
+                final episode = audioController.podcastResponse.value;
+                return CustomAppBar(title: Text(episode?.title ?? 'Loading...'));
+              }),
+              const SizedBox(height: 10),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Audio Loading Indicator
+                      Obx(() => audioController.isLoading.value
+                          ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(color: kTeal),
+                      )
+                          : const SizedBox()),
+                      // Audio Error
+                      Obx(() => audioController.errorMessage.value != null && audioController.errorMessage.value!.isNotEmpty
+                          ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(audioController.errorMessage.value!,
+                            style: const TextStyle(color: Colors.red)),
+                      )
+                          : const SizedBox()),
+                      // ==================== Album Art ====================
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Obx(() {
+                          final imageUrl = audioController.podcastResponse.value?.imageUrl ?? '';
+                          return Image.network(
+                            imageUrl,
+                            width: 300,
+                            height: 320,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (_, child, progress) => progress == null
+                                ? child
+                                : Container(
+                              color: kTeal.withOpacity(0.1),
+                              child: const Center(child: CircularProgressIndicator(color: kTeal)),
+                            ),
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 300,
+                              height: 320,
+                              color: kTeal.withOpacity(0.1),
+                              child: const Icon(Icons.podcasts, size: 80, color: kTeal),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 30),
+                      // ==================== Title + HTML Description ====================
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Obx(() {
+                                final episode = audioController.podcastResponse.value;
+                                final String title = episode?.title ?? 'Unknown Episode';
+                                final String descriptionHtml = episode?.description ?? 'No description';
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Title
+                                    Text(
+                                      title,
+                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // HTML Description
+                                    Html(
+                                      data: descriptionHtml,
+                                      style: {
+                                        "body": Style(
+                                          fontSize: FontSize(14),
+                                          color: Colors.grey[700],
+                                          margin: Margins.zero,
+                                          padding: HtmlPaddings.zero,
+                                        ),
+                                        "p": Style(margin: Margins(top: Margin(6), bottom: Margin(6))),
+                                        "a": Style(color: kTeal, textDecoration: TextDecoration.underline),
+                                      },
+                                      onLinkTap: (url, _, __) {
+                                        if (url != null) launchUrlString(url);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            IconButton(
+                              onPressed: _summaryApiMethod,
+                              icon: Image.asset('assets/icons/menu.png', width: 26, height: 26, color: kTeal),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      // ==================== Progress Bar ====================
+                      Obx(() {
+                        final durSec = audioController.duration.value.inSeconds;
+                        final posSec = audioController.position.value.inSeconds;
+                        final progress = durSec > 0 ? posSec / durSec : 0.0;
+                        return Column(
+                          children: [
+                            WaveformProgressBar(
+                              progress: progress,
+                              onChanged: audioController.seekTo,
+                              activeColor: kTeal,
+                              inactiveColor: kTeal.withOpacity(0.25),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_format(posSec), style: const TextStyle(color: Colors.grey)),
+                                Text(_format(durSec), style: const TextStyle(color: Colors.grey)),
+                              ],
+                            ),
+                          ],
+                        );
+                      }),
+                      const SizedBox(height: 30),
+                      // ==================== Player Controls ====================
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/shuffle.png', width: 26, height: 26, color: kTeal)),
+                          IconButton(onPressed: _playPrevious, icon: const Icon(Icons.skip_previous, size: 30, color: kTeal)),
+                          Container(
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: kTeal, width: 2)),
+                            child: IconButton(
+                              onPressed: audioController.togglePlayPause,
+                              icon: Obx(() => Icon(audioController.isPlaying.value ? Icons.pause : Icons.play_arrow, size: 30, color: kTeal)),
+                            ),
+                          ),
+                          IconButton(onPressed: _playNext, icon: const Icon(Icons.skip_next, size: 30, color: kTeal)),
+                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/repeat.png', width: 26, height: 26, color: kTeal)),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                      // ==================== Key Information Summary ====================
+                      const Align(
+                        alignment: Alignment.topLeft,
+                        child: Text("Key Information Summary", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, 4))],
+                          ),
+                          child: Obx(() {
+                            if (searchTextController.isLoading.value) {
+                              return const Center(child: CircularProgressIndicator(color: kTeal));
+                            }
+                            final result = searchTextController.transcriptionResult.value;
+                            if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
+                              return const Text(
+                                "Summary is being generated... Please wait",
+                                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 15),
+                                textAlign: TextAlign.center,
+                              );
+                            }
+                            final String summary = result.combinedSummary!.trim();
+                            // Detect truncated summary
+                            bool isTruncated = summary.length < 250 || !RegExp(r'[.!?…]"?$').hasMatch(summary);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  summary,
+                                  style: const TextStyle(fontSize: 15.5, height: 1.7, color: Colors.black87),
+                                ),
+                                /*if (isTruncated) ...[
+                                  const SizedBox(height: 20),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade50,
+                                      border: Border.all(color: Colors.orange.shade300),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 22),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            "Summary appears incomplete. Regenerating in background...",
+                                            style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13.5),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],*/
+                              ],
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Future<void> _summaryApiMethod() async {
+    final audioUrl = audioController.podcastResponse.value?.audioUrl;
+    if (audioUrl == null || audioUrl.isEmpty) {
+      Get.snackbar("Error", "Audio not ready", backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+    final success = await audioSummaryApiController.audioSummaryApiController(audioUrl);
+    if (success) {
+      // Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
+    }
+  }
+}
+// WaveformProgressBar (আগের মতোই রাখো – কোনো চেঞ্জ লাগবে না)
+class WaveformProgressBar extends StatelessWidget {
+  // ... তোমার আগের কোডটা অপরিবর্তিত থাকবে
+  // (উপরের কোডে আমি শুধু শেষে রেখেছি, তুমি কপি করে নাও)
+  const WaveformProgressBar({
+    super.key,
+    required this.progress,
+    required this.onChanged,
+    this.barCount = 60,
+    this.preferredBarWidth = 3.0,
+    this.gap = 2.0,
+    this.maxBarHeight = 40.0,
+    this.activeColor = Colors.black,
+    this.inactiveColor = Colors.grey,
+    this.thumbRadius = 6.0,
+  });
+  final double progress;
+  final ValueChanged<double> onChanged;
+  final int barCount;
+  final double preferredBarWidth;
+  final double gap;
+  final double maxBarHeight;
+  final Color activeColor;
+  final Color inactiveColor;
+  final double thumbRadius;
+  List<double> _sampleHeights() {
+    final List<double> h = [];
+    for (int i = 0; i < barCount; i++) {
+      final t = i / barCount;
+      final v = (0.55 +
+          0.35 * math.sin(2 * math.pi * (3 * t)) +
+          0.25 * math.sin(2 * math.pi * (7 * t + 0.4)) +
+          0.15 * math.sin(2 * math.pi * (13 * t + 1.7)));
+      h.add(v.clamp(0.1, 1.0));
+    }
+    return h;
+  }
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final totalWidth = c.maxWidth;
+        final double barWidth = (totalWidth - gap * (barCount - 1)) / barCount;
+        final bars = _sampleHeights();
+        final activeCount = (progress * barCount).clamp(0, barCount.toDouble()).floor();
+        void _seekFromDx(double dx) {
+          final p = (dx / totalWidth).clamp(0.0, 1.0);
+          onChanged(p);
+        }
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (d) => _seekFromDx(d.localPosition.dx),
+          onHorizontalDragUpdate: (d) => _seekFromDx(d.localPosition.dx),
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Row(
+                children: List.generate(barCount, (i) {
+                  final h = bars[i] * maxBarHeight;
+                  final isActive = i < activeCount;
+                  return Padding(
+                    padding: EdgeInsets.only(right: i == barCount - 1 ? 0 : gap),
+                    child: Container(
+                      width: barWidth,
+                      height: h,
+                      decoration: BoxDecoration(
+                        color: isActive ? activeColor : inactiveColor,
+                        borderRadius: BorderRadius.circular(barWidth),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              Positioned(
+                left: (totalWidth * progress) - thumbRadius,
+                child: Container(
+                  width: thumbRadius * 2,
+                  height: thumbRadius * 2,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: activeColor),
                 ),
               ),
             ],

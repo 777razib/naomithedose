@@ -83,4 +83,13 @@ class SearchingApiController extends GetxController {
     errorMessage.value = '';
     searchingApiMethod(interest: _currentQuery, loadMore: false);
   }
+  //when commit this field
+  void clearResults() {
+    episodes.clear();
+    hasMore.value = true;
+    isLoading.value = false;
+    errorMessage.value = '';
+    currentPage.value = 1;
+    _currentQuery = null;
+  }
 }

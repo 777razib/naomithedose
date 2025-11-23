@@ -15,7 +15,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    HomeScreen(),
+    //HomeScreen(),
     SearchScreen(),
     //DiscoverScreen(),
     //MediaScreen(),
@@ -75,7 +75,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(0, Icons.home, Icons.home_outlined, 'Home'),
+          //_buildNavItem(0, Icons.home, Icons.home_outlined, 'Home'),
           _buildNavItem(1, Icons.search, Icons.search_outlined, 'Search'),
           //const SizedBox(width: 60), // FAB-এর জন্য স্পেস
           //_buildNavItem(2, Icons.photo_library, Icons.photo_library_outlined, 'Media'),

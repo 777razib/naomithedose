@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: SplashScreen(),
       ),
-      builder: EasyLoading.init(), // এই লাইনটি যোগ করুন
+      builder: EasyLoading.init(),
     );
   }
 }

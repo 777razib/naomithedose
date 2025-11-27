@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/app_colors.dart';
 import '../../home/widget/audio_image_widget.dart';
 import '../../media/audio/screen/audio_play.dart';
-import '../controller/searching_api_controller.dart'; // ← কন্ট্রোলার
+import '../controller/searching_api_controller.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,17 +19,15 @@ class _SearchScreenState extends State<SearchScreen> {
   final SearchingApiController apiCtrl = Get.put(SearchingApiController());
 
   bool isListView = true;
-  String _currentQuery = "Business";
 
   @override
   void initState() {
     super.initState();
-    _searchInApi("Business");
 
     _searchController.addListener(() {
       final query = _searchController.text.trim();
       if (query.isEmpty) {
-        _searchInApi("Business");
+        apiCtrl.clearResults();
       } else {
         _searchInApi(query);
       }
@@ -43,12 +41,24 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _searchInApi(String query) async {
-    _currentQuery = query;
+    if (query.isEmpty) return;
     await apiCtrl.searchingApiMethod(interest: query, loadMore: false);
   }
 
   Future<void> _onRefresh() async {
-    await _searchInApi(_currentQuery);
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      await _searchInApi(query);
+    }
+  }
+
+  String _formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return "Unknown date";
+    }
   }
 
   @override
@@ -60,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             const SizedBox(height: 20),
 
-            // SEARCH BAR + TOGGLE
+            // SEARCH BAR + LIST/GRID TOGGLE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -75,12 +85,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
-                        onSubmitted: (value) {
-                          final query = value.trim();
-                          if (query.isNotEmpty) {
-                            _searchInApi(query);
-                          }
-                        },
+                        onSubmitted: (value) => _searchInApi(value.trim()),
                         decoration: InputDecoration(
                           hintText: "Search audios…",
                           hintStyle: TextStyle(color: Colors.grey.shade600),
@@ -139,44 +144,27 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 16),
 
+            // MAIN CONTENT AREA
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: Obx(() {
+                  final query = _searchController.text.trim();
+
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (apiCtrl.errorMessage.isNotEmpty && !apiCtrl.isLoading.value) {
-                    return Center(
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          const SizedBox(height: 100),
-                          const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          const Text("No internet connection", style: TextStyle(color: Colors.grey, fontSize: 16), textAlign: TextAlign.center),
-                          const SizedBox(height: 8),
-                          Text("Pull down to retry", style: TextStyle(color: Colors.grey.shade600, fontSize: 14), textAlign: TextAlign.center),
-                        ],
-                      ),
-                    );
+                  if (apiCtrl.errorMessage.isNotEmpty) {
+                    return _buildErrorWidget();
+                  }
+
+                  if (query.isEmpty) {
+                    return const SizedBox.shrink();
                   }
 
                   if (apiCtrl.episodes.isEmpty) {
-                    return Center(
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 100),
-                          Icon(Icons.search_off, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text("No results found", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                          SizedBox(height: 8),
-                          Text("Try searching something else", style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    );
+                    return _buildNoResultsWidget(query);
                   }
 
                   return isListView ? _buildListView() : _buildGridView();
@@ -189,6 +177,42 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  // MARK: - UI Widgets
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text("No internet connection", style: TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center),
+          SizedBox(height: 8),
+          Text("Pull down to retry", style: TextStyle(color: Colors.grey, fontSize: 14), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultsWidget(String query) {
+    return Center(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 100),
+          const Icon(Icons.search_off, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text('"${query}"', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          const Text("No results found", style: TextStyle(fontSize: 16, color: Colors.grey)),
+          const SizedBox(height: 8),
+          const Text("Try different keywords", style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildListView() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -196,11 +220,12 @@ class _SearchScreenState extends State<SearchScreen> {
       itemBuilder: (context, i) {
         if (i == apiCtrl.episodes.length) {
           apiCtrl.loadNextPage();
-          return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
-
         final podcast = apiCtrl.episodes[i];
-
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: AudioImageWidget(
@@ -208,14 +233,13 @@ class _SearchScreenState extends State<SearchScreen> {
             subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} episodes",
             date: _formatDate(podcast.releaseDate),
             episodes: "${podcast.episodeCount} episodes",
-            imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
-            onTap: () {
-              // আপনার প্লেয়ারে যাওয়ার জন্য podcastId বা feedUrl দিন
-              Get.to(() => MusicPlayerScreen(
-                episodeUrls: [podcast.feedUrl], // অথবা podcast.itunesUrl
-                currentTopic: podcast.name,
-              ));
-            },
+            imageUrl: podcast.imageUrl.isNotEmpty
+                ? podcast.imageUrl
+                : "https://via.placeholder.com/300",
+            onTap: () => Get.to(() => MusicPlayerScreen(
+              episodeUrls: [podcast.feedUrl],
+              currentTopic: podcast.name,
+            )),
           ),
         );
       },
@@ -237,33 +261,21 @@ class _SearchScreenState extends State<SearchScreen> {
           apiCtrl.loadNextPage();
           return const Center(child: CircularProgressIndicator());
         }
-
         final podcast = apiCtrl.episodes[i];
-
         return AudioImageWidget(
           title: podcast.name,
           subTitle: "${podcast.formattedDuration} • ${podcast.episodeCount} eps",
           date: _formatDate(podcast.releaseDate),
           episodes: "${podcast.episodeCount} eps",
-          imageUrl: podcast.imageUrl.isNotEmpty ? podcast.imageUrl : "https://via.placeholder.com/300",
-          onTap: () {
-            print("-----${podcast.feedUrl}");
-            print("-----${podcast.name}");
-            Get.to(() => MusicPlayerScreen(
-              episodeUrls: [podcast.feedUrl],
-              currentTopic: podcast.name,
-            ));
-          },
+          imageUrl: podcast.imageUrl.isNotEmpty
+              ? podcast.imageUrl
+              : "https://via.placeholder.com/300",
+          onTap: () => Get.to(() => MusicPlayerScreen(
+            episodeUrls: [podcast.feedUrl],
+            currentTopic: podcast.name,
+          )),
         );
       },
     );
-  }
-  String _formatDate(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      return DateFormat('MMM dd, yyyy').format(date);
-    } catch (e) {
-      return "Unknown date";
-    }
   }
 }

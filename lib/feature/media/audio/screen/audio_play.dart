@@ -972,41 +972,78 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                                 ),
                                               ),
 
-                                              // See more button (only if content is long)
                                               if (isLongDescription)
                                                 GestureDetector(
                                                   onTap: () {
                                                     Get.dialog(
                                                       Dialog(
                                                         backgroundColor: const Color(0xffFFFFF3),
-                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(20),
+                                                        ),
+                                                        insetPadding: const EdgeInsets.all(20), // খুব গুরুত্বপূর্ণ
                                                         child: Padding(
                                                           padding: const EdgeInsets.all(20.0),
                                                           child: Column(
                                                             mainAxisSize: MainAxisSize.min,
                                                             children: [
-                                                              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                                                              const SizedBox(height: 16),
-                                                              SingleChildScrollView(
-                                                                child: Html(
-                                                                  data: descriptionHtml,
-                                                                  style: {
-                                                                    "body": Style(fontSize: FontSize(15), color: Colors.black87),
-                                                                    "a": Style(color: kTeal, textDecoration: TextDecoration.underline),
-                                                                  },
-                                                                  onLinkTap: (url, _, __) => url != null ? launchUrlString(url) : null,
+                                                              // Title
+                                                              Text(
+                                                                title,
+                                                                style: const TextStyle(
+                                                                  fontSize: 20,
+                                                                  fontWeight: FontWeight.bold,
                                                                 ),
                                                               ),
+                                                              const SizedBox(height: 16),
+
+                                                              // এখানে Flexible + Expanded দিয়ে scrollable area বানানো হলো
+                                                              Flexible(
+                                                                child: SingleChildScrollView(
+                                                                  physics: const BouncingScrollPhysics(), // সুন্দর স্ক্রল
+                                                                  child: Html(
+                                                                    data: descriptionHtml,
+                                                                    style: {
+                                                                      "body": Style(
+                                                                        fontSize: FontSize(15),
+                                                                        color: Colors.black87,
+                                                                      ),
+                                                                      "a": Style(
+                                                                        color: kTeal,
+                                                                        textDecoration: TextDecoration.underline,
+                                                                      ),
+                                                                    },
+                                                                    onLinkTap: (url, _, __) {
+                                                                      if (url != null) launchUrlString(url);
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                              ),
+
                                                               const SizedBox(height: 20),
-                                                              ElevatedButton(
-                                                                onPressed: () => Get.back(),
-                                                                style: ElevatedButton.styleFrom(backgroundColor: kTeal),
-                                                                child: const Text("Close", style: TextStyle(color: Colors.white)),
+
+                                                              // Close Button
+                                                              SizedBox(
+                                                                width: double.infinity,
+                                                                child: ElevatedButton(
+                                                                  onPressed: () => Get.back(),
+                                                                  style: ElevatedButton.styleFrom(
+                                                                    backgroundColor: kTeal,
+                                                                    shape: RoundedRectangleBorder(
+                                                                      borderRadius: BorderRadius.circular(12),
+                                                                    ),
+                                                                  ),
+                                                                  child: const Text(
+                                                                    "Close",
+                                                                    style: TextStyle(color: Colors.white),
+                                                                  ),
+                                                                ),
                                                               ),
                                                             ],
                                                           ),
                                                         ),
                                                       ),
+                                                      barrierDismissible: true, // বাইরে ট্যাপ করেও বন্ধ করা যাবে
                                                     );
                                                   },
                                                   child: Padding(
@@ -1014,7 +1051,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                                     child: Row(
                                                       mainAxisSize: MainAxisSize.min,
                                                       children: const [
-                                                        Text("See more", style: TextStyle(color: kTeal, fontWeight: FontWeight.w600, fontSize: 14)),
+                                                        Text(
+                                                          "See more",
+                                                          style: TextStyle(
+                                                            color: kTeal,
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
                                                         SizedBox(width: 4),
                                                         Icon(Icons.keyboard_arrow_down_rounded, color: kTeal, size: 22),
                                                       ],

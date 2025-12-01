@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/app_colors.dart';
-import '../../home/screen/home_screen.dart';
-import '../../profile/screens/profile_screen.dart';     // সঠিক ইমপোর্ট
 import '../../search/screen/search_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -14,84 +13,65 @@ class CustomBottomNavBar extends StatefulWidget {
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   int _currentIndex = 0;
 
+  // শুধু ২টা স্ক্রিন → ইনডেক্স 0 এবং 1
   final List<Widget> _screens = [
-    //HomeScreen(),
-    SearchScreen(),
-    //DiscoverScreen(),
-    //MediaScreen(),
-    ProfileScreen(),
+    const SearchScreen(),    // index 0
+    const ProfileScreen(),   // index 1
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: _screens[_currentIndex], // সঠিক ইনডেক্স
+      body: _screens[_currentIndex],
       bottomNavigationBar: _buildBottomNavigationBar(),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
-  /*Widget _buildFloatingActionButton() {
-    return SizedBox(
-      height: 69,
-      width: 69,
-      child: FloatingActionButton(
-        backgroundColor: Colors.white,
-        elevation: 6,
-        onPressed: () {
-          Get.put(QRCodeScannerApiController());
-          Get.to(() => const QrScannerScreen());
-        },
-        shape: const CircleBorder(),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(48.14),
-          child: Image.asset(
-            "assets/icons/qr_code_scanner.png",
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.qr_code_scanner, size: 32, color: Colors.blue);
-            },
-          ),
-        ),
-      ),
-    );
-  }*/
-
   Widget _buildBottomNavigationBar() {
     return Container(
-      height: 70,
+      height: 80,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          //_buildNavItem(0, Icons.home, Icons.home_outlined, 'Home'),
-          _buildNavItem(1, Icons.search, Icons.search_outlined, 'Search'),
-          //const SizedBox(width: 60), // FAB-এর জন্য স্পেস
-          //_buildNavItem(2, Icons.photo_library, Icons.photo_library_outlined, 'Media'),
-          _buildNavItem(2, Icons.person, Icons.person_outlined, 'Profile'), // ✅ Fixed index (was 3)
+          // Search → index 0
+          _buildNavItem(
+            index: 0,
+            activeIcon: Icons.search,
+            inactiveIcon: Icons.search_outlined,
+            label: 'Search',
+          ),
+
+          // Profile → index 1
+          _buildNavItem(
+            index: 1,
+            activeIcon: Icons.person,
+            inactiveIcon: Icons.person_outlined,
+            label: 'Profile',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(
-      int index,
-      IconData activeIcon,
-      IconData inactiveIcon,
-      String label,
-      ) {
-    bool isSelected = _currentIndex == index;
+  Widget _buildNavItem({
+    required int index,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
+    required String label,
+  }) {
+    final bool isSelected = _currentIndex == index;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -99,14 +79,14 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isSelected ? activeIcon : inactiveIcon,
               color: isSelected ? AppColors.primary : Colors.grey,
-              size: 24,
+              size: 28,
             ),
             const SizedBox(height: 4),
             Text(

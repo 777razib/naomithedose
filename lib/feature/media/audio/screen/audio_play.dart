@@ -1,8 +1,8 @@
-/*
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
-
+import 'package:flutter_html/flutter_html.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
 import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
@@ -14,8 +14,8 @@ const kTeal = Color(0xFF39CCCC);
 class MusicPlayerScreen extends StatefulWidget {
   const MusicPlayerScreen({
     super.key,
-    this.episodeUrls,        // List of iTunes URLs (e.g. podcast.itunesUrl)
-    this.currentTopic = 'general', // Default topic for transcription
+    this.episodeUrls,
+    this.currentTopic = 'general',
     this.Id,
   });
 
@@ -30,8 +30,9 @@ class MusicPlayerScreen extends StatefulWidget {
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   late final AudioPlayApiControllers audioController;
   late final SearchTextApiController searchTextController;
-
-  final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
+  final AudioSummaryApiController audioSummaryApiController = Get.put(
+    AudioSummaryApiController(),
+  );
 
   int currentIndex = 0;
   String currentUrl = '';
@@ -39,18 +40,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   @override
   void initState() {
     super.initState();
-
-    // 1. Audio Controller
     audioController = Get.isRegistered<AudioPlayApiControllers>()
         ? Get.find<AudioPlayApiControllers>()
         : Get.put(AudioPlayApiControllers());
-
-    // 2. Search Text Controller
     searchTextController = Get.isRegistered<SearchTextApiController>()
         ? Get.find<SearchTextApiController>()
         : Get.put(SearchTextApiController());
 
-    // Load first episode
     final urls = widget.episodeUrls ?? [];
     if (urls.isNotEmpty) {
       currentIndex = 0;
@@ -64,32 +60,19 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  // Main Load Episode → First Audio → Then Search Text
   Future<void> _loadEpisode(String url, String topic) async {
     if (url.isEmpty) return;
-
     currentUrl = url;
-    print('Loading Podcast URL: $url | Topic: $topic');
-
-    // Step 1: Load & Play Audio
     await audioController.audioPlayApiMethod(url, topic);
-
-    // Step 2: After audio loads → Get job_id and call Search Text API
-    final episodeResponse = audioController.podcastResponse.value;
-    final jobId = episodeResponse?.jobId;
-
+    final jobId = audioController.podcastResponse.value?.jobId;
     if (jobId != null && jobId.isNotEmpty) {
-      print("Job ID found: $jobId → Calling Search Text API");
-      await searchTextController.fetchTranscription( jobId);
-    } else {
-      print("No job_id found. Transcription might not be ready yet.");
+      await searchTextController.fetchTranscription(jobId);
     }
   }
 
   Future<void> _playNext() async {
     final urls = widget.episodeUrls ?? [];
     if (urls.isEmpty || currentIndex >= urls.length - 1) return;
-
     currentIndex++;
     await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
@@ -97,7 +80,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Future<void> _playPrevious() async {
     final urls = widget.episodeUrls ?? [];
     if (urls.isEmpty || currentIndex <= 0) return;
-
     currentIndex--;
     await _loadEpisode(urls[currentIndex], widget.currentTopic);
   }
@@ -117,94 +99,308 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // Dynamic Title from Audio Controller
+              // Dynamic Title in AppBar
               Obx(() {
                 final episode = audioController.podcastResponse.value;
-                final title = episode?.title ?? 'Loading...';
-                return CustomAppBar(title: Text(title));
+                return CustomAppBar(
+                  title: Text(episode?.title ?? 'Loading...'),
+                );
               }),
-
-              const SizedBox(height: 5),
+              const SizedBox(height: 10),
 
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Audio Loading
-                      Obx(() => audioController.isLoading.value
-                          ? const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(color: kTeal),
-                      )
-                          : const SizedBox()),
+                      // Loading Indicator
+                      Obx(
+                        () => audioController.isLoading.value
+                            ? const Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(color: kTeal),
+                              )
+                            : const SizedBox(),
+                      ),
 
-                      // Audio Error
-                      Obx(() => audioController.errorMessage.value != null
-                          ? Text(audioController.errorMessage.value!, style: const TextStyle(color: Colors.red))
-                          : const SizedBox()),
+                      // Error Message
+                      Obx(
+                        () =>
+                            audioController.errorMessage.value != null &&
+                                audioController.errorMessage.value!.isNotEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Text(
+                                  audioController.errorMessage.value!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              )
+                            : const SizedBox(),
+                      ),
 
                       // Album Art
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Obx(() {
-                          final imageUrl = audioController.podcastResponse.value?.imageUrl ?? '';
+                          final imageUrl =
+                              audioController.podcastResponse.value?.imageUrl ??
+                              '';
                           return Image.network(
                             imageUrl,
                             width: 300,
                             height: 320,
                             fit: BoxFit.cover,
-                            loadingBuilder: (_, child, progress) => progress == null
+                            loadingBuilder: (_, child, progress) =>
+                                progress == null
                                 ? child
-                                : Container(color: kTeal.withOpacity(0.1), child: const Center(child: CircularProgressIndicator(color: kTeal))),
+                                : Container(
+                                    color: kTeal.withOpacity(0.1),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        color: kTeal,
+                                      ),
+                                    ),
+                                  ),
                             errorBuilder: (_, __, ___) => Container(
                               width: 300,
                               height: 320,
                               color: kTeal.withOpacity(0.1),
-                              child: const Icon(Icons.podcasts, size: 80, color: kTeal),
+                              child: const Icon(
+                                Icons.podcasts,
+                                size: 80,
+                                color: kTeal,
+                              ),
                             ),
                           );
                         }),
                       ),
-
                       const SizedBox(height: 30),
 
-                      // Title + Description
+                      // Title + Expandable Description (Max 3 lines)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Row(
                           children: [
                             Expanded(
                               child: Obx(() {
-                                final episode = audioController.podcastResponse.value;
+                                final episode =
+                                    audioController.podcastResponse.value;
+                                final String title =
+                                    episode?.title ?? 'Unknown Episode';
+                                final String descriptionHtml =
+                                    episode?.description ?? '';
+
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      episode?.title ?? 'Unknown Episode',
-                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      episode?.description ?? 'No description',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    const SizedBox(height: 12),
+
+                                    // Description: 3 lines max + See more
+                                    if (descriptionHtml.trim().isEmpty ||
+                                        descriptionHtml == '<p><br></p>')
+                                      const Text(
+                                        'No description available',
+                                        style: TextStyle(color: Colors.grey),
+                                      )
+                                    else
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final bool isLongDescription =
+                                              descriptionHtml.length > 300;
+
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              SizedBox(
+                                                height: 72, // Approx 3 lines
+                                                child: Html(
+                                                  data: descriptionHtml,
+                                                  style: {
+                                                    "body": Style(
+                                                      fontSize: FontSize(14),
+                                                      color: Colors.grey[700],
+                                                      margin: Margins.zero,
+                                                      padding:
+                                                          HtmlPaddings.zero,
+                                                    ),
+                                                    "p": Style(
+                                                      margin: Margins(
+                                                        top: Margin(6),
+                                                        bottom: Margin(6),
+                                                      ),
+                                                    ),
+                                                    "a": Style(
+                                                      color: kTeal,
+                                                      textDecoration:
+                                                          TextDecoration
+                                                              .underline,
+                                                    ),
+                                                  },
+                                                  onLinkTap: (url, _, __) =>
+                                                      url != null
+                                                      ? launchUrlString(url)
+                                                      : null,
+                                                ),
+                                              ),
+
+                                              // See more button (only if content is long)
+                                              if (isLongDescription)
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    Get.dialog(
+                                                      Dialog(
+                                                        backgroundColor:
+                                                            const Color(
+                                                              0xffFFFFF3,
+                                                            ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                20,
+                                                              ),
+                                                        ),
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets.all(
+                                                                20.0,
+                                                              ),
+                                                          child: Column(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Text(
+                                                                title,
+                                                                style: const TextStyle(
+                                                                  fontSize: 20,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 16,
+                                                              ),
+                                                              SingleChildScrollView(
+                                                                child: Html(
+                                                                  data:
+                                                                      descriptionHtml,
+                                                                  style: {
+                                                                    "body": Style(
+                                                                      fontSize:
+                                                                          FontSize(
+                                                                            15,
+                                                                          ),
+                                                                      color: Colors
+                                                                          .black87,
+                                                                    ),
+                                                                    "a": Style(
+                                                                      color:
+                                                                          kTeal,
+                                                                      textDecoration:
+                                                                          TextDecoration
+                                                                              .underline,
+                                                                    ),
+                                                                  },
+                                                                  onLinkTap:
+                                                                      (
+                                                                        url,
+                                                                        _,
+                                                                        __,
+                                                                      ) => url != null
+                                                                      ? launchUrlString(
+                                                                          url,
+                                                                        )
+                                                                      : null,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 20,
+                                                              ),
+                                                              ElevatedButton(
+                                                                onPressed: () =>
+                                                                    Get.back(),
+                                                                style: ElevatedButton.styleFrom(
+                                                                  backgroundColor:
+                                                                      kTeal,
+                                                                ),
+                                                                child: const Text(
+                                                                  "Close",
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          top: 8,
+                                                        ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: const [
+                                                        Text(
+                                                          "See more",
+                                                          style: TextStyle(
+                                                            color: kTeal,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Icon(
+                                                          Icons
+                                                              .keyboard_arrow_down_rounded,
+                                                          color: kTeal,
+                                                          size: 22,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
                                   ],
                                 );
                               }),
                             ),
+
+                            // Menu Icon Button
                             IconButton(
                               onPressed: _summaryApiMethod,
-                              icon: Image.asset('assets/icons/menu.png', width: 26, height: 26, color: kTeal),
+                              icon: Image.asset(
+                                'assets/icons/menu.png',
+                                width: 26,
+                                height: 26,
+                                color: kTeal,
+                              ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 40),
 
                       // Progress Bar
@@ -212,7 +408,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                         final durSec = audioController.duration.value.inSeconds;
                         final posSec = audioController.position.value.inSeconds;
                         final progress = durSec > 0 ? posSec / durSec : 0.0;
-
                         return Column(
                           children: [
                             WaveformProgressBar(
@@ -225,142 +420,219 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(_format(posSec), style: const TextStyle(color: Colors.grey)),
-                                Text(_format(durSec), style: const TextStyle(color: Colors.grey)),
+                                Text(
+                                  _format(posSec),
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                Text(
+                                  _format(durSec),
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
                               ],
                             ),
                           ],
                         );
                       }),
-
                       const SizedBox(height: 30),
 
                       // Player Controls
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/shuffle.png', width: 26, height: 26, color: kTeal)),
-                          IconButton(onPressed: _playPrevious, icon: const Icon(Icons.skip_previous, size: 30, color: kTeal)),
-                          Container(
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: kTeal, width: 2)),
-                            child: IconButton(
-                              onPressed: audioController.togglePlayPause,
-                              icon: Obx(() => Icon(audioController.isPlaying.value ? Icons.pause : Icons.play_arrow, size: 30, color: kTeal)),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Image.asset(
+                              'assets/icons/shuffle.png',
+                              width: 26,
+                              height: 26,
+                              color: kTeal,
                             ),
                           ),
-                          IconButton(onPressed: _playNext, icon: const Icon(Icons.skip_next, size: 30, color: kTeal)),
-                          IconButton(onPressed: () {}, icon: Image.asset('assets/icons/repeat.png', width: 26, height: 26, color: kTeal)),
+                          IconButton(
+                            onPressed: _playPrevious,
+                            icon: const Icon(
+                              Icons.skip_previous,
+                              size: 30,
+                              color: kTeal,
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: kTeal, width: 2),
+                            ),
+                            child: IconButton(
+                              onPressed: audioController.togglePlayPause,
+                              icon: Obx(
+                                () => Icon(
+                                  audioController.isPlaying.value
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                  size: 30,
+                                  color: kTeal,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _playNext,
+                            icon: const Icon(
+                              Icons.skip_next,
+                              size: 30,
+                              color: kTeal,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Image.asset(
+                              'assets/icons/repeat.png',
+                              width: 26,
+                              height: 26,
+                              color: kTeal,
+                            ),
+                          ),
                         ],
                       ),
+                      const SizedBox(height: 40),
 
-                      const SizedBox(height: 30),
-
-                      // Search Result Box (from SearchTextApiControllers)
+                      // Key Information Summary with **bold** highlighting
                       const Align(
                         alignment: Alignment.topLeft,
-                        child: Text("Key Information Summary", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          "Key Information Summary",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-
+                      const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.topLeft,
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade300, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4)),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
                             ],
                           ),
+
                           child: Obx(() {
-                            // Loading state
+                            // Loading
                             if (searchTextController.isLoading.value) {
-                              return const Center(child: CircularProgressIndicator(color: kTeal));
-                            }
-
-                            final result = searchTextController.transcriptionResult.value;
-
-                            // No result yet, or summary is empty
-                            if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
-                              return const Text(
-                                "Summary is being generated... Please wait",
-                                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-                                textAlign: TextAlign.center,
+                              return const Center(
+                                child: Column(
+                                  children: [
+                                    CircularProgressIndicator(color: kTeal),
+                                    SizedBox(height: 16),
+                                    Text("Generating AI summary...", style: TextStyle(color: kTeal, fontSize: 16)),
+                                  ],
+                                ),
                               );
                             }
 
-                            final String summary = result.combinedSummary!.trim();
+                            // এখানে চেক করো: result != null && result.status == 'failed'
+                            final result = searchTextController.transcriptionResult.value;
 
-                            // ──────────────────────────────────────────────────────────────
-                            // Detect incomplete/truncated summary
-                            // ──────────────────────────────────────────────────────────────
-                            bool isTruncated = false;
-                            if (summary.length < 200) { // Heuristic: very short for a full summary
-                              isTruncated = true;
-                            } else if (!RegExp(r'[.!?…]$').hasMatch(summary.trim())) {
-                              // Doesn't end with proper punctuation
-                              isTruncated = true;
+                            if (result != null && result.status == 'failed') {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset('assets/icons/cloud_off.png', width: 80, height: 80, color: Colors.red.shade400), // অথবা Icon
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      "Request failed !",
+                                      style: TextStyle(color: Colors.red, fontSize: 22, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                                      child: Text(
+                                        searchTextController.errorMessage.value.isNotEmpty
+                                            ? searchTextController.errorMessage.value
+                                            : "OpenAI quota exceeded. Please try again later.",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.red.shade600, fontSize: 15),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 28),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        final jobId = audioController.podcastResponse.value?.jobId;
+                                        if (jobId != null && jobId.isNotEmpty) {
+                                          searchTextController.fetchTranscription(jobId);
+                                        }
+                                      },
+                                      icon: const Icon(Icons.refresh, color: Colors.white),
+                                      label: const Text("Retry", style: TextStyle(fontSize: 16)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: kTeal,
+                                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                             }
 
-                            // Show the summary (full or partial)
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  summary,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    height: 1.6,
-                                    color: Colors.black87,
-                                  ),
+                            // No summary or still processing
+                            if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
+                              return const Center(
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.info_rounded, size: 50, color: Colors.orange),
+                                    SizedBox(height: 12),
+                                    Text("Summary not available Please wait", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                                  ],
                                 ),
+                              );
+                            }
 
-                               */
-/* // Show warning if summary is incomplete
-                                if (isTruncated) ...[
-                                  const SizedBox(height: 20),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.shade50,
-                                      border: Border.all(
-                                        color: Colors.orange.shade300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.warning_amber_rounded,
-                                          color: Colors.orange.shade700,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            "Summary appears incomplete. We are regenerating it...",
-                                            style: TextStyle(
-                                              color: Colors.orange.shade800,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],*//*
+                            // Success
+                            final rawSummary = result.combinedSummary!.trim();
+                            List<TextSpan> buildBold(String text) {
+                              final spans = <TextSpan>[];
+                              final regex = RegExp(r'\*\*([^*]+)\*\*');
+                              int last = 0;
+                              for (var m in regex.allMatches(text)) {
+                                if (m.start > last) spans.add(TextSpan(text: text.substring(last, m.start)));
+                                spans.add(TextSpan(
+                                  text: m.group(1),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: kTeal, fontSize: 16.5),
+                                ));
+                                last = m.end;
+                              }
+                              if (last < text.length) spans.add(TextSpan(text: text.substring(last)));
+                              return spans;
+                            }
 
-                              ],
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(fontSize: 16, height: 1.8, color: Colors.black87),
+                                  children: buildBold(rawSummary),
+                                ),
+                              ),
                             );
                           }),
                         ),
                       ),
-
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -372,23 +644,27 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
-  // Summary Button (old one)
   Future<void> _summaryApiMethod() async {
     final audioUrl = audioController.podcastResponse.value?.audioUrl;
     if (audioUrl == null || audioUrl.isEmpty) {
-      Get.snackbar("Error", "Audio not ready", backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Audio not ready",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
-    final success = await audioSummaryApiController.audioSummaryApiController(audioUrl);
+    final success = await audioSummaryApiController.audioSummaryApiController(
+      audioUrl,
+    );
     if (success) {
-      //Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
+      // Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
     }
   }
 }
 
-// WaveformProgressBar unchanged — রেখে দে
-
-// WaveformProgressBar (Unchanged)
+// Waveform Progress Bar (unchanged)
 class WaveformProgressBar extends StatelessWidget {
   const WaveformProgressBar({
     super.key,
@@ -417,7 +693,8 @@ class WaveformProgressBar extends StatelessWidget {
     final List<double> h = [];
     for (int i = 0; i < barCount; i++) {
       final t = i / barCount;
-      final v = (0.55 +
+      final v =
+          (0.55 +
           0.35 * math.sin(2 * math.pi * (3 * t)) +
           0.25 * math.sin(2 * math.pi * (7 * t + 0.4)) +
           0.15 * math.sin(2 * math.pi * (13 * t + 1.7)));
@@ -433,7 +710,9 @@ class WaveformProgressBar extends StatelessWidget {
         final totalWidth = c.maxWidth;
         final double barWidth = (totalWidth - gap * (barCount - 1)) / barCount;
         final bars = _sampleHeights();
-        final activeCount = (progress * barCount).clamp(0, barCount.toDouble()).floor();
+        final activeCount = (progress * barCount)
+            .clamp(0, barCount.toDouble())
+            .floor();
 
         void _seekFromDx(double dx) {
           final p = (dx / totalWidth).clamp(0.0, 1.0);
@@ -452,7 +731,9 @@ class WaveformProgressBar extends StatelessWidget {
                   final h = bars[i] * maxBarHeight;
                   final isActive = i < activeCount;
                   return Padding(
-                    padding: EdgeInsets.only(right: i == barCount - 1 ? 0 : gap),
+                    padding: EdgeInsets.only(
+                      right: i == barCount - 1 ? 0 : gap,
+                    ),
                     child: Container(
                       width: barWidth,
                       height: h,
@@ -481,14 +762,15 @@ class WaveformProgressBar extends StatelessWidget {
       },
     );
   }
-}*/
+
+}
+*/
 import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
 import 'package:flutter_html/flutter_html.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
-import 'package:naomithedose/feature/media/audio/screen/description_screen.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
 import '../controller/search_text_api_controller.dart';
@@ -981,3 +1263,4 @@ class WaveformProgressBar extends StatelessWidget {
     );
   }
 }
+

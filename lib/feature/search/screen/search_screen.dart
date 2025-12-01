@@ -27,7 +27,10 @@ class _SearchScreenState extends State<SearchScreen> {
     _searchController.addListener(() {
       final query = _searchController.text.trim();
       if (query.isEmpty) {
+
         apiCtrl.clearResults();
+
+        apiCtrl.clearResults(); // সার্চ ক্লিয়ার হলে রেজাল্ট মুছে ফেলো
       } else {
         _searchInApi(query);
       }
@@ -151,22 +154,27 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: Obx(() {
                   final query = _searchController.text.trim();
 
+                  // 1. প্রথমবার লোডিং (এবং এখনো কোনো রেজাল্ট নাই)
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  // 2. এরর থাকলে
                   if (apiCtrl.errorMessage.isNotEmpty) {
                     return _buildErrorWidget();
                   }
 
+                  // 3. সার্চ বক্স খালি → কিছুই দেখাবো না (এটাই তুমি চেয়েছ!)
                   if (query.isEmpty) {
-                    return const SizedBox.shrink();
+                    return const SizedBox.shrink(); // পুরোপুরি ফাঁকা
                   }
 
+                  // 4. সার্চ করা হয়েছে কিন্তু কোনো রেজাল্ট নাই
                   if (apiCtrl.episodes.isEmpty) {
                     return _buildNoResultsWidget(query);
                   }
 
+                  // 5. রেজাল্ট আছে → লিস্ট বা গ্রিড দেখাও
                   return isListView ? _buildListView() : _buildGridView();
                 }),
               ),

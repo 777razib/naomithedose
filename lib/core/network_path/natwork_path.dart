@@ -73,14 +73,10 @@ class Urls {
     final offset = (page - 1) * pageSize;
     final q = Uri.encodeComponent(topic.trim());
 
-    return '$_baseUrl/podcasts/popular?'
-        'topic=$q'
-        '&type=episode'
-        '&language=English'
-        '&len_min=5'
-        '&len_max=120'
-        '&offset=$offset'
-        '&page_size=$pageSize';
+    return '$_baseUrl/podcasts?'
+        'q=$q'
+        '&page_size=$pageSize'
+        '&use_ai=true';
   }
   /// Builds the API URL for the home/feed screen
   /// - If [interest] is null, empty, or whitespace → returns popular podcasts

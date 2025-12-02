@@ -1,11 +1,12 @@
-// searching_api_controller.dart
+
+
 import 'package:get/get.dart';
-import 'package:naomithedose/core/network_caller/network_config.dart';
+import '../../../core/network_caller/network_config.dart';
 import '../../../core/network_path/natwork_path.dart';
-import '../model/searching_model.dart'; // ← hide Podcast মুছে ফেলুন
+import '../model/searching_model.dart';
 
 class SearchingApiController extends GetxController {
-  final RxList<Podcast> episodes = <Podcast>[].obs;
+  final RxList<Episode> episodes = <Episode>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
   final RxString errorMessage = ''.obs;
@@ -45,17 +46,18 @@ class SearchingApiController extends GetxController {
       final NetworkResponse response = await NetworkCall.getRequest(url: url);
 
       if (response.isSuccess && response.responseData != null) {
-        final model = PodcastSearchResponse.fromJson(response.responseData!);
+        final model = SearchResult.fromJson(response.responseData!);
+        final newEpisodes = model.episodes ?? [];
 
         if (loadMore) {
-          episodes.addAll(model.podcasts);
+          episodes.addAll(newEpisodes);
         } else {
-          episodes.assignAll(model.podcasts);
+          episodes.assignAll(newEpisodes);
         }
 
-        hasMore.value = model.podcasts.length >= pageSize;
+        hasMore.value = newEpisodes.length >= pageSize;
       } else {
-        errorMessage.value = response.errorMessage ?? 'Failed to load podcasts';
+        errorMessage.value = response.errorMessage ?? 'Failed to load results';
         hasMore.value = false;
       }
     } catch (e) {
@@ -79,11 +81,6 @@ class SearchingApiController extends GetxController {
     await searchingApiMethod(interest: interest ?? _currentQuery, loadMore: false);
   }
 
-  void retry() {
-    errorMessage.value = '';
-    searchingApiMethod(interest: _currentQuery, loadMore: false);
-  }
-  //when commit this field
   void clearResults() {
     episodes.clear();
     hasMore.value = true;

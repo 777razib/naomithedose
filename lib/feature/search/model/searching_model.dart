@@ -1,75 +1,124 @@
-// models/podcast_search_response.dart
 
-class PodcastSearchResponse {
-  final String query;
-  final int totalResults;
-  final List<Podcast> podcasts;
 
-  PodcastSearchResponse({
-    required this.query,
-    required this.totalResults,
-    required this.podcasts,
+class SearchResult {
+  final List<Episode>? episodes;
+  final int? total;
+
+  SearchResult({this.episodes, this.total});
+
+  factory SearchResult.fromJson(Map<String, dynamic> json) => SearchResult(
+    episodes: json['episodes'] != null
+        ? List<Episode>.from(
+        (json['episodes'] as List).map((x) => Episode.fromJson(x)))
+        : [],
+    total: json['total'] as int?,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'episodes': episodes?.map((x) => x.toJson()).toList(),
+    'total': total,
+  };
+}
+class Episode {
+  final String? id;
+  final String? title;
+  final String? description;
+  final String? url;
+  final String? imageUrl;
+  final String? artist;
+  final String? podcastName;
+  final String? releaseDate;
+
+  Episode({
+    this.id,
+    this.title,
+    this.description,
+    this.url,
+    this.imageUrl,
+    this.artist,
+    this.podcastName,
+    this.releaseDate,
   });
 
-  factory PodcastSearchResponse.fromJson(Map<String, dynamic> json) {
-    var list = json['podcasts'] as List? ?? [];
-    List<Podcast> podcastList = list.map((i) => Podcast.fromJson(i)).toList();
+  factory Episode.fromJson(Map<String, dynamic> json) => Episode(
+    id: json['id'] as String?,
+    title: json['title'] as String?,
+    description: json['description'] as String?,
+    url: json['url'] as String?,
+    imageUrl: json['image_url'] as String?,
+    artist: json['artist'] as String?,
+    podcastName: json['podcast_name'] as String?,
+    releaseDate: json['release_date'] as String?,
+  );
 
-    return PodcastSearchResponse(
-      query: json['query'] as String? ?? '',
-      totalResults: json['total_results'] as int? ?? 0,
-      podcasts: podcastList,
-    );
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'url': url,
+    'image_url': imageUrl,
+    'artist': artist,
+    'podcast_name': podcastName,
+    'release_date': releaseDate,
+  };
 }
 
+
 class Podcast {
-  final String podcastId;
-  final String name;
-  final String description;
-  final int episodeCount;
-  final int durationMs;
-  final String feedUrl;
-  final String itunesUrl;
-  final String imageUrl;
-  final String releaseDate;
-  final String country;
-  final String platform;
+  final String? title;
+  final String? description;
+  final String? podcastName;
+  final String? artist;
+  final String? releaseDate;
+  final int? durationMs;
+  final String? url;
+  final String? imageUrl;
+  final String? podcastId;
 
   Podcast({
-    required this.podcastId,
-    required this.name,
-    required this.description,
-    required this.episodeCount,
-    required this.durationMs,
-    required this.feedUrl,
-    required this.itunesUrl,
-    required this.imageUrl,
-    required this.releaseDate,
-    required this.country,
-    required this.platform,
+    this.title,
+    this.description,
+    this.podcastName,
+    this.artist,
+    this.releaseDate,
+    this.durationMs,
+    this.url,
+    this.imageUrl,
+    this.podcastId,
   });
 
   factory Podcast.fromJson(Map<String, dynamic> json) {
     return Podcast(
-      podcastId: json['podcast_id'] as String? ?? '',
-      name: json['name'] as String? ?? 'Unknown Podcast',
-      description: json['description'] as String? ?? '',
-      episodeCount: json['episode_count'] as int? ?? 0,
-      durationMs: json['duration_ms'] as int? ?? 0,
-      feedUrl: json['feed_url'] as String? ?? '',
-      itunesUrl: json['itunes_url'] as String? ?? '',
-      imageUrl: json['image_url'] as String? ?? '',
-      releaseDate: json['release_date'] as String? ?? '',
-      country: json['country'] as String? ?? 'Unknown',
-      platform: json['platform'] as String? ?? 'apple',
+      title: json['title'] as String?,
+      description: json['description'] as String?,
+      podcastName: json['podcast_name'] as String? ?? json['name'] as String?,
+      artist: json['artist'] as String?,
+      releaseDate: json['release_date'] as String?,
+      durationMs: (json['duration_ms'] as num?)?.toInt(),
+      url: json['url'] as String?,
+      imageUrl: json['image_url'] as String?,
+      podcastId: json['podcast_id'] as String? ?? json['Podcast_id'] as String?,
     );
   }
 
-  // Helper
+  // HELPERS
   String get formattedDuration {
-    final mins = durationMs ~/ 60000;
-    final secs = (durationMs % 60000) ~/ 1000;
-    return '${mins}m ${secs}s';
+    if (durationMs == null || durationMs == 0) return '0m 0s';
+    final d = Duration(milliseconds: durationMs!);
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    final s = d.inSeconds % 60;
+    if (h > 0) return '${h}h ${m}m';
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
   }
+
+  String get safeImageUrl =>
+      imageUrl?.isNotEmpty == true ? imageUrl! : 'https://via.placeholder.com/300';
+
+  String get displayTitle =>
+      title?.isNotEmpty == true ? title! : podcastName ?? 'Unknown Episode';
+
+  String get displaySubtitle =>
+      artist?.isNotEmpty == true ? artist! : podcastName ?? 'Unknown Show';
 }

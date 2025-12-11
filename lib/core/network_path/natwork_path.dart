@@ -2,7 +2,7 @@
 
 class Urls {
   // ==================== BASE URL ====================
-  static const String _baseUrl = 'http://206.162.244.140:8033';
+  static const String _baseUrl = 'http://204.197.173.4:8033';
 
   // ==================== AUTH ====================
 

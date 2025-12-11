@@ -100,10 +100,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               // Dynamic Title in AppBar
               Obx(() {
                 final episode = audioController.podcastResponse.value;
-                return CustomAppBar(title: Text(epgit isode?.title ?? 'Loading...'));
+                return CustomAppBar(title: Text(episode?.title ?? 'Loading...'));
               }),
               const SizedBox(height: 10),
-
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -116,7 +115,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                         child: CircularProgressIndicator(color: kTeal),
                       )
                           : const SizedBox()),
-
                       // Error Message
                       Obx(() => audioController.errorMessage.value != null && audioController.errorMessage.value!.isNotEmpty
                           ? Padding(

@@ -7,11 +7,11 @@ import '../../../../core/network_path/natwork_path.dart';
 import '../../../choose interest/model/choose_interest_response_model.dart';
 import '../model/audio_summay_model.dart';
 
-
 class AudioPlayApiController extends GetxController {
   final chooseInterestItem = Rxn<ChooseInterestItem>();
   final isLoading = false.obs;
   final errorMessage = Rxn<String>();
+
   String format(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -54,11 +54,9 @@ class AudioPlayApiController extends GetxController {
 
     isLoading.value = true;
     errorMessage.value = null;
-    // Don't nullify the current item, so the UI doesn't flicker
-    // chooseInterestItem.value = null; 
 
     _setupStreams(); // safe
-    await player.stop();
+    await player.stop(); // ✅ stop audio when page opens or new item loads
 
     try {
       final response = await NetworkCall.getRequest(url: Urls.singleAudio(id));
@@ -72,8 +70,11 @@ class AudioPlayApiController extends GetxController {
         if (audioUrl != null && audioUrl.isNotEmpty) {
           try {
             await player.setUrl(audioUrl);
-            player.play(); // Auto-play
-            print('Audio loaded and playing: $audioUrl');
+
+            // ✅ FIX: DO NOT AUTO PLAY
+            // player.play();
+
+            print('Audio loaded and ready: $audioUrl');
           } catch (e) {
             print('Player Error in AudioPlayApiController: $e');
             errorMessage.value = 'Failed to play audio.';
@@ -101,13 +102,11 @@ class AudioPlayApiController extends GetxController {
   }
 }
 
-
-
-
 class AudioPlayApiControllers extends GetxController {
   final podcastResponse = Rxn<EpisodeDetail>();
   final isLoading = false.obs;
   final errorMessage = Rxn<String>();
+
   String format(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -142,7 +141,7 @@ class AudioPlayApiControllers extends GetxController {
     super.onClose();
   }
 
-  Future<void> audioPlayApiMethod(String urls,String topic) async {
+  Future<void> audioPlayApiMethod(String urls, String topic) async {
     if (urls.isEmpty && topic.isEmpty) {
       errorMessage.value = 'Invalid Url or Topic';
       return;
@@ -150,14 +149,14 @@ class AudioPlayApiControllers extends GetxController {
 
     isLoading.value = true;
     errorMessage.value = null;
-    // Do not nullify to prevent UI flicker
-    // podcastResponse.value = null;
 
     _setupStreams(); // safe
-    await player.stop();
+    await player.stop(); // ✅ stop audio when page opens or new episode loads
 
     try {
-      final response = await NetworkCall.getRequest(url: Urls.playPodcastEpisode(topic: topic, podcastUrl: urls));
+      final response = await NetworkCall.getRequest(
+        url: Urls.playPodcastEpisode(topic: topic, podcastUrl: urls),
+      );
 
       if (response.isSuccess && response.responseData != null) {
         final data = response.responseData! as Map<String, dynamic>;
@@ -166,16 +165,19 @@ class AudioPlayApiControllers extends GetxController {
 
         final audioUrl = item.audioUrl;
         if (audioUrl != null && audioUrl.isNotEmpty) {
-            try {
-              await player.setUrl(audioUrl);
-              player.play(); // Auto-play
-              print('Audio loaded and playing: $audioUrl');
-            } catch (e) {
-              print('Player Error in AudioPlayApiControllers: $e');
-              errorMessage.value = 'Failed to play audio.';
-            }
+          try {
+            await player.setUrl(audioUrl);
+
+            // ✅ FIX: DO NOT AUTO PLAY
+            // player.play();
+
+            print('Audio loaded and ready: $audioUrl');
+          } catch (e) {
+            print('Player Error in AudioPlayApiControllers: $e');
+            errorMessage.value = 'Failed to play audio.';
+          }
         } else {
-            errorMessage.value = 'No audio URL in episode details.';
+          errorMessage.value = 'No audio URL in episode details.';
         }
       } else {
         errorMessage.value = response.errorMessage ?? 'Failed to load podcast episode.';

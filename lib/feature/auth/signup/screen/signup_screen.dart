@@ -327,9 +327,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _apiCallButton() async {
     if (_formKey.currentState!.validate()) {
       bool isSuccess = await signUpApiController.signUpApiMethod();
+
       if (isSuccess) {
+        // ✅ Success Snackbar
+        Get.snackbar(
+          "Success",
+          "Account created successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+
         Get.offAll(SignInScreen());
+      } else {
+        // ✅ Error Snackbar (API message)
+        Get.snackbar(
+          "Error",
+          signUpApiController.errorMessage ?? "Something went wrong",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
       }
     }
   }
+
 }

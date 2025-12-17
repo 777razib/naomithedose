@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -19,15 +17,28 @@ class _SearchScreenState extends State<SearchScreen> {
   final SearchingApiController apiCtrl = Get.put(SearchingApiController());
   bool isListView = true;
 
+  // ✅ Only this value controls what is shown/searched
+  String _submittedQuery = "";
+
   @override
   void initState() {
     super.initState();
+
+    // ✅ No API call here. Only clear results when user edits away from submitted query.
     _searchController.addListener(() {
-      final query = _searchController.text.trim();
-      if (query.isEmpty) {
+      final typed = _searchController.text.trim();
+
+      // If user clears input, clear results
+      if (typed.isEmpty) {
+        _submittedQuery = "";
         apiCtrl.clearResults();
-      } else {
-        _searchInApi(query);
+        return;
+      }
+
+      // If user is typing something different than last submitted query,
+      // clear previous results so pagination can't trigger API.
+      if (_submittedQuery.isNotEmpty && typed != _submittedQuery) {
+        apiCtrl.clearResults();
       }
     });
   }
@@ -38,14 +49,23 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  Future<void> _searchInApi(String query) async {
-    if (query.isEmpty) return;
-    await apiCtrl.searchingApiMethod(interest: query);
+  Future<void> _submitSearch(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+
+    FocusScope.of(context).unfocus(); // optional: hide keyboard
+
+    setState(() {
+      _submittedQuery = q; // ✅ commit query only here
+    });
+
+    await apiCtrl.searchingApiMethod(interest: q);
   }
 
   Future<void> _onRefresh() async {
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) await _searchInApi(query);
+    if (_submittedQuery.isNotEmpty) {
+      await apiCtrl.searchingApiMethod(interest: _submittedQuery);
+    }
   }
 
   String _formatDate(String isoDate) {
@@ -78,11 +98,20 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
-                        onSubmitted: (v) => _searchInApi(v.trim()),
+
+                        // ✅ Only Enter triggers search
+                        onSubmitted: (v) => _submitSearch(v),
+
                         decoration: InputDecoration(
                           hintText: "Search podcasts…",
                           hintStyle: TextStyle(color: Colors.grey.shade600),
-                          prefixIcon: Icon(Icons.search, color: AppColors.primary),
+
+                          // ✅ Only button click triggers search
+                          prefixIcon: IconButton(
+                            icon: Icon(Icons.search, color: AppColors.primary),
+                            onPressed: () => _submitSearch(_searchController.text),
+                          ),
+
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -110,7 +139,11 @@ class _SearchScreenState extends State<SearchScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
                                 isListView ? "List" : "Grid",
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -123,7 +156,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               decoration: const BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
+                                ],
                               ),
                             ),
                           ),
@@ -139,7 +174,8 @@ class _SearchScreenState extends State<SearchScreen> {
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: Obx(() {
-                  final query = _searchController.text.trim();
+                  // ✅ UI depends on submitted query only (not typed text)
+                  final query = _submittedQuery;
 
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
@@ -163,6 +199,8 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
+
+  // बाकी সব একই থাকবে ↓↓↓
 
   Widget _buildErrorWidget() => Center(
     child: ListView(
@@ -197,7 +235,10 @@ class _SearchScreenState extends State<SearchScreen> {
     itemBuilder: (context, i) {
       if (i == apiCtrl.episodes.length) {
         apiCtrl.loadNextPage();
-        return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+        return const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator()),
+        );
       }
       final e = apiCtrl.episodes[i];
       return Padding(
@@ -216,7 +257,6 @@ class _SearchScreenState extends State<SearchScreen> {
               ));
             }
           },
-
         ),
       );
     },
@@ -255,3 +295,4 @@ class _SearchScreenState extends State<SearchScreen> {
     },
   );
 }
+

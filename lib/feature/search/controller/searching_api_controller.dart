@@ -1,5 +1,4 @@
 
-
 import 'package:get/get.dart';
 import '../../../core/network_caller/network_config.dart';
 import '../../../core/network_path/natwork_path.dart';

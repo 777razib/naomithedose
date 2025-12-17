@@ -10,8 +10,8 @@ class SignUpApiController extends GetxController {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  final AccountTextEditingController accountTextEditingController = Get.put(AccountTextEditingController());
-
+  final AccountTextEditingController accountTextEditingController =
+  Get.find<AccountTextEditingController>();
   UserModel? userModel;
 
   Future<bool> signUpApiMethod() async {
@@ -51,7 +51,7 @@ class SignUpApiController extends GetxController {
         _errorMessage = null;
         isSuccess = true;
       } else {
-        _errorMessage = response.responseData?["message"] ?? "Unknown error occurred";
+        _errorMessage = response.responseData?["detail"] ?? "Unknown error occurred";
       }
     } catch (e, stack) {
       _errorMessage = "Something went wrong: $e";

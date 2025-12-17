@@ -80,7 +80,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         textInputAction: TextInputAction.search,
                         onSubmitted: (v) => _searchInApi(v.trim()),
                         decoration: InputDecoration(
-                          hintText: "Search audios…",
+                          hintText: "Search podcasts…",
                           hintStyle: TextStyle(color: Colors.grey.shade600),
                           prefixIcon: Icon(Icons.search, color: AppColors.primary),
                           border: InputBorder.none,

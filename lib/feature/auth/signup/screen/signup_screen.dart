@@ -59,14 +59,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 4),
+                   /* SizedBox(height: 4),
                     Text(
                       "Lorem ipsum dolor sit amet",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
-                    ),
+                    ),*/
                   ],
                 ),
               ),

@@ -88,12 +88,12 @@ class _OtpScreenState extends State<OtpScreen> {
             const SizedBox(height: 10),
             RichText(
               textAlign: TextAlign.center,
-              text: const TextSpan(
+              text:  TextSpan(
                 style: TextStyle(color: Colors.grey, fontSize: 14),
                 children: [
                   TextSpan(text: "We have just sent you 5 digit code via your\nemail "),
                   TextSpan(
-                    text: "example@gmail.com",
+                    text: accountTextEditingController.emailController.text,
                     style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
                   ),
                 ],

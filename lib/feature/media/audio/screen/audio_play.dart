@@ -8,6 +8,7 @@ import 'package:naomithedose/core/widgets/custom_appbar.dart';
 import '../controller/audio_paly_api_controller.dart';
 import '../controller/audio_summary_api_controller.dart';
 import '../controller/search_text_api_controller.dart';
+import '../widget/feature_item_widget.dart';
 
 const kTeal = Color(0xFF39CCCC);
 
@@ -28,6 +29,12 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
+  final features = [
+    "Analyze the podcast",
+    "Transcribe the podcast",
+    "Find the relevant topics",
+    "Create a summary",
+  ];
   late final AudioPlayApiControllers audioController;
   late final SearchTextApiController searchTextController;
   final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
@@ -379,8 +386,18 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Obx(() {
-                            if (searchTextController.isLoading.value) {
+                            /*if (searchTextController.isLoading.value) {
                               return const Center(child: CircularProgressIndicator(color: kTeal));
+                            }*/ if (searchTextController.isLoading.value) {
+                              return Center(
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                    elevation: 10,
+                                    color: Colors.orangeAccent,
+                                    child: FeaturesSpotlight(features: features)),
+                              );
                             }
                             final result = searchTextController.transcriptionResult.value;
                             if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
@@ -446,7 +463,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       // Get.to(() => PodcastDescriptionScreen(urls: audioUrl));
     }
   }
+
 }
+
+
 
 // Waveform Progress Bar (unchanged)
 class WaveformProgressBar extends StatelessWidget {

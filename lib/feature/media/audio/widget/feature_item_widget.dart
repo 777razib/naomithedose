@@ -1,6 +1,6 @@
 // widget/feature_item_widget.dart (or wherever you keep it)
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class FeaturesSpotlight extends StatelessWidget {
   final List<String> features;
@@ -14,10 +14,12 @@ class FeaturesSpotlight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Divide audio into 4 equal parts → show one feature per 25%
+    // Calculate the index based on the progress
     int index = (progress * features.length).floor().clamp(0, features.length - 1);
 
-    // Optional: Add a subtle fade or scale animation when index changes
+    // Debug print to ensure the index is updating correctly
+    print('Index: $index, Progress: $progress');
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 600),
       transitionBuilder: (child, animation) {
@@ -27,7 +29,7 @@ class FeaturesSpotlight extends StatelessWidget {
         );
       },
       child: Padding(
-        key: ValueKey<int>(index), // Important for AnimatedSwitcher
+        key: ValueKey<int>(index), // Important for AnimatedSwitcher to detect changes
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -40,7 +42,7 @@ class FeaturesSpotlight extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                features[index],
+                features[index], // Ensure this updates as the index changes
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -60,3 +62,4 @@ class FeaturesSpotlight extends StatelessWidget {
     );
   }
 }
+

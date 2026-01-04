@@ -70,6 +70,7 @@ class NetworkCall {
       final Response response = await get(uri, headers: headers);
       _logResponse(fullUrl, response);
 
+       print('++++++++${response.body}');
       if (response.statusCode == 200 || response.statusCode == 201) {
         return NetworkResponse(
           statusCode: response.statusCode,

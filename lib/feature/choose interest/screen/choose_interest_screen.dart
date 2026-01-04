@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
 import '../../nav bar/screen/custom_bottom_nav_bar.dart';
-import '../controller/choose_interest_api_controller.dart';
 import '../widget/choose_interest_widget.dart';
 
 class ChooseInterestScreen extends StatefulWidget {
@@ -15,7 +14,7 @@ class ChooseInterestScreen extends StatefulWidget {
 
 class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
 
-  ChooseInterestApiController chooseInterestApiController = Get.put(ChooseInterestApiController());
+  //ChooseInterestApiController chooseInterestApiController = Get.put(ChooseInterestApiController());
 
   final List<Map<String, dynamic>> interests = [
     {"id": 1, "name": "Travel", "image": "https://i.postimg.cc/GpZDNXwj/photo-1613064934056-08a061014f37.jpg"},
@@ -189,12 +188,12 @@ class _ChooseInterestScreenState extends State<ChooseInterestScreen> {
     Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
 
     try {
-      await chooseInterestApiController.chooseInterestApiMethod(interest: searchQuery);
+     /* await chooseInterestApiController.chooseInterestApiMethod(interest: searchQuery);
 
       if (chooseInterestApiController.episodes.isEmpty) {
         Get.snackbar("No Results", "Try other topics");
         return;
-      }
+      }*/
 
       Get.offAll(() => const CustomBottomNavBar()); // ← NOW WORKS!
     } catch (e) {

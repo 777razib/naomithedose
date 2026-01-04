@@ -29,13 +29,13 @@ class AppBindingsGetXDependencyInjection extends Bindings {
     );
 
     // 🎧 Audio / Media
-    Get.lazyPut<AudioPlayApiController>(
-          () => AudioPlayApiController(),
+    Get.lazyPut<AudioPlayController>(
+          () => AudioPlayController(),
       fenix: true,
     );
 
-    Get.lazyPut<AudioPlayApiControllers>(
-          () => AudioPlayApiControllers(),
+    Get.lazyPut<AudioPlayController>(
+          () => AudioPlayController(),
       fenix: true,
     );
 

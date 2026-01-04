@@ -1,68 +1,91 @@
 
 
 class SearchResult {
-  final List<Episode>? episodes;
-  final int? total;
+  final String query;
+  final int podcastsMatched;
+  final int episodesReturned;
+  final List<Episode> episodes;
 
-  SearchResult({this.episodes, this.total});
-
-  factory SearchResult.fromJson(Map<String, dynamic> json) => SearchResult(
-    episodes: json['episodes'] != null
-        ? List<Episode>.from(
-        (json['episodes'] as List).map((x) => Episode.fromJson(x)))
-        : [],
-    total: json['total'] as int?,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'episodes': episodes?.map((x) => x.toJson()).toList(),
-    'total': total,
-  };
-}
-class Episode {
-  final String? id;
-  final String? title;
-  final String? description;
-  final String? url;
-  final String? imageUrl;
-  final String? artist;
-  final String? podcastName;
-  final String? releaseDate;
-
-  Episode({
-    this.id,
-    this.title,
-    this.description,
-    this.url,
-    this.imageUrl,
-    this.artist,
-    this.podcastName,
-    this.releaseDate,
+  SearchResult({
+    required this.query,
+    required this.podcastsMatched,
+    required this.episodesReturned,
+    required this.episodes,
   });
 
-  factory Episode.fromJson(Map<String, dynamic> json) => Episode(
-    id: json['id'] as String?,
-    title: json['title'] as String?,
-    description: json['description'] as String?,
-    url: json['url'] as String?,
-    imageUrl: json['image_url'] as String?,
-    artist: json['artist'] as String?,
-    podcastName: json['podcast_name'] as String?,
-    releaseDate: json['release_date'] as String?,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'url': url,
-    'image_url': imageUrl,
-    'artist': artist,
-    'podcast_name': podcastName,
-    'release_date': releaseDate,
-  };
+  factory SearchResult.fromJson(Map<String, dynamic> json) {
+    return SearchResult(
+      query: json['query'] as String? ?? '',
+      podcastsMatched: json['podcasts_matched'] as int? ?? 0,
+      episodesReturned: json['episodes_returned'] as int? ?? 0,
+      episodes: (json['episodes'] as List<dynamic>?)
+          ?.map((e) => Episode.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+          [],
+    );
+  }
 }
+class Episode {
+  final String title;
+  final String description;
+  final String podcastName;
+  final String artist;
+  final String releaseDate;
+  final String duration;
+  final int durationSec;
+  final String url;
+  final String feedUrl;
+  final String rssAudioUrl;
+  final String platform;
+  final String type;
+  final String episodeId;
+  final int collectionId;
+  final String imageUrl;
+  final String? jobId;
+  final String? topic;
 
+  Episode({
+    required this.title,
+    required this.description,
+    required this.podcastName,
+    required this.artist,
+    required this.releaseDate,
+    required this.duration,
+    required this.durationSec,
+    required this.url,
+    required this.feedUrl,
+    required this.rssAudioUrl,
+    required this.platform,
+    required this.type,
+    required this.episodeId,
+    required this.collectionId,
+    required this.imageUrl,
+    this.jobId,
+    this.topic,
+  });
+
+  factory Episode.fromJson(Map<String, dynamic> json) {
+    return Episode(
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      podcastName: json['podcast_name'] as String? ?? '',
+      artist: json['artist'] as String? ?? '',
+      releaseDate: json['release_date'] as String? ?? '',
+      duration: json['duration'] as String? ?? '',
+      durationSec: json['duration_sec'] as int? ?? 0,
+      url: json['url'] as String? ?? '',
+      feedUrl: json['feed_url'] as String? ?? '',
+      rssAudioUrl: json['rss_audio_url'] as String? ?? '',
+      platform: json['platform'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+      episodeId: json['episode_id'] as String? ?? '',
+      collectionId: json['collection_id'] as int? ?? 0,
+      imageUrl: json['image_url'] as String? ?? '',
+      jobId: json['job_id'] as String?, // can be null
+      topic: json['topic'] as String?, // can be null
+    );
+  }
+}
 
 class Podcast {
   final String? title;

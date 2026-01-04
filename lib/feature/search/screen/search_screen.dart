@@ -250,10 +250,12 @@ class _SearchScreenState extends State<SearchScreen> {
           episodes: e.podcastName ?? "",
           imageUrl: e.imageUrl?.isNotEmpty == true ? e.imageUrl! : "https://via.placeholder.com/300",
           onTap: () {
+            debugPrint("++**list********+++Urls---:${e.url}");
+            debugPrint("+++***list******++topic---:${e.topic}");
             if (e.url != null && e.url!.isNotEmpty) {
               Get.to(() => MusicPlayerScreen(
                 episodeUrls: [e.url!],
-                currentTopic: e.title ?? e.podcastName ?? "",
+                currentTopic: e.topic ?? "",
               ));
             }
           },
@@ -277,6 +279,9 @@ class _SearchScreenState extends State<SearchScreen> {
         return const Center(child: CircularProgressIndicator());
       }
       final e = apiCtrl.episodes[i];
+      final ee=apiCtrl.searchResult;
+      debugPrint("++++++++topic+++++++${e?.topic}");
+
       return AudioImageWidget(
         title: e.title ?? e.podcastName ?? "Unknown Episode",
         subTitle: e.artist ?? e.podcastName ?? "Unknown Show",
@@ -284,10 +289,15 @@ class _SearchScreenState extends State<SearchScreen> {
         episodes: e.podcastName ?? "",
         imageUrl: e.imageUrl?.isNotEmpty == true ? e.imageUrl! : "https://via.placeholder.com/300",
         onTap: () {
+          debugPrint("++*****Grid*****+++Urls---:${e.url}");
+          debugPrint("+++*****Grid****++topic---:${e.topic}");
           if (e.url != null && e.url!.isNotEmpty) {
+            debugPrint("+++++Urls---:${e.url}");
+            debugPrint("+++++topic---:${e.topic}");
             Get.to(() => MusicPlayerScreen(
-              episodeUrls: [e.url!],
-              currentTopic: e.title ?? e.podcastName ?? "",
+              episodeUrls: [e.url],
+              //currentTopic: ee?.query??"",
+              currentTopic: e.topic ?? "",
             ));
           }
         },

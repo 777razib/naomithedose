@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/Get.dart';
 import 'dart:math' as math;
 import 'package:flutter_html/flutter_html.dart';
+import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:naomithedose/core/widgets/custom_appbar.dart';
 import '../controller/audio_paly_api_controller.dart';
@@ -16,12 +17,12 @@ class MusicPlayerScreen extends StatefulWidget {
   const MusicPlayerScreen({
     super.key,
     this.episodeUrls,
-    this.currentTopic = 'general',
+    this.currentTopic,
     this.Id,
   });
 
   final List<String>? episodeUrls;
-  final String currentTopic;
+  final String? currentTopic;
   final String? Id;
 
   @override
@@ -35,7 +36,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     "Find the relevant topics",
     "Create a summary",
   ];
-  late final AudioPlayApiControllers audioController;
+  late final AudioPlayController audioController;
   late final SearchTextApiController searchTextController;
   final AudioSummaryApiController audioSummaryApiController = Get.put(AudioSummaryApiController());
 
@@ -45,21 +46,23 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    audioController = Get.isRegistered<AudioPlayApiControllers>()
-        ? Get.find<AudioPlayApiControllers>()
-        : Get.put(AudioPlayApiControllers());
+    audioController = Get.isRegistered<AudioPlayController>()
+        ? Get.find<AudioPlayController>()
+        : Get.put(AudioPlayController());
     searchTextController = Get.isRegistered<SearchTextApiController>()
         ? Get.find<SearchTextApiController>()
         : Get.put(SearchTextApiController());
 
     final urls = widget.episodeUrls ?? [];
+    final topic=widget.currentTopic??'';
     if (urls.isNotEmpty) {
       currentIndex = 0;
       currentUrl = urls.first;
-      _loadEpisode(currentUrl, widget.currentTopic);
+      _loadEpisode(currentUrl, topic);
     } else if (widget.Id != null && widget.Id!.isNotEmpty) {
       currentUrl = widget.Id!;
-      _loadEpisode(currentUrl, widget.currentTopic);
+      print("------topic-----${widget.currentTopic}");
+      _loadEpisode(currentUrl, topic);
     } else {
       Get.back();
     }
@@ -68,25 +71,32 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Future<void> _loadEpisode(String url, String topic) async {
     if (url.isEmpty) return;
     currentUrl = url;
-    await audioController.audioPlayApiMethod(url, topic);
+    await audioController.loadPodcastEpisode(url, topic);
     final jobId = audioController.podcastResponse.value?.jobId;
+
+    debugPrint("----------topic----------$topic");
     if (jobId != null && jobId.isNotEmpty) {
+      debugPrint("J+++++++++++++ob ID: $jobId");
       await searchTextController.fetchTranscription(jobId);
     }
   }
 
   Future<void> _playNext() async {
     final urls = widget.episodeUrls ?? [];
+    final topic=widget.currentTopic??'';
+
     if (urls.isEmpty || currentIndex >= urls.length - 1) return;
     currentIndex++;
-    await _loadEpisode(urls[currentIndex], widget.currentTopic);
+    await _loadEpisode(urls[currentIndex], topic);
   }
 
   Future<void> _playPrevious() async {
     final urls = widget.episodeUrls ?? [];
+    final topic=widget.currentTopic??'';
+
     if (urls.isEmpty || currentIndex <= 0) return;
     currentIndex--;
-    await _loadEpisode(urls[currentIndex], widget.currentTopic);
+    await _loadEpisode(urls[currentIndex], topic);
   }
 
   String _format(int seconds) {
@@ -282,7 +292,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                                           ),
                                                         ),
                                                       ),
-                                                      barrierDismissible: true, // বাইরে ট্যাপ করেও বন্ধ করা যাবে
+                                                      barrierDismissible: true,
                                                     );
                                                   },
                                                   child: Padding(
@@ -388,19 +398,56 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                           child: Obx(() {
                             /*if (searchTextController.isLoading.value) {
                               return const Center(child: CircularProgressIndicator(color: kTeal));
-                            }*/ if (searchTextController.isLoading.value) {
+                            }*/// Inside the Obx() where you show FeaturesSpotlight while loading summary
+
+                            if (searchTextController.isLoading.value) {
                               return Center(
-                                child: Card(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(50),
+                                    ),
                                     elevation: 10,
                                     color: Colors.orangeAccent,
-                                    child: FeaturesSpotlight(features: features)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Obx(() {
+                                              // Reactive variables directly use করো
+                                              final duration = audioController.duration.value;
+                                              final position = audioController.position.value;
+
+                                              final progress = duration.inSeconds > 0
+                                                  ? (position.inSeconds / duration.inSeconds).clamp(0.0, 1.0)
+                                                  : 0.0;
+
+                                              // এখানে progress change হলে Obx automatically rebuild করবে
+                                              return FeaturesSpotlight(
+                                                features: features,
+                                                progress: progress,
+                                              );
+                                            }),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Lottie.asset(
+                                            "assets/lottie_json/loading_lottie.json",
+                                            width: 60,
+                                            height: 60,
+                                            repeat: true,
+                                            animate: true,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               );
                             }
                             final result = searchTextController.transcriptionResult.value;
-                            if (result == null || result.combinedSummary == null || result.combinedSummary!.trim().isEmpty) {
+                            if (result == null || result.summary == null || result.summary!.trim().isEmpty) {
                               return const Text(
                                 "Summary is being generated... Please wait",
                                 style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 15),
@@ -408,7 +455,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                               );
                             }
 
-                            final String rawSummary = result.combinedSummary!.trim();
+                            final String rawSummary = result.summary!.trim();
 
                             List<TextSpan> buildHighlightedSpans(String text) {
                               List<TextSpan> spans = [];
@@ -453,7 +500,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
   Future<void> _summaryApiMethod() async {
-    final audioUrl = audioController.podcastResponse.value?.audioUrl;
+    final audioUrl = audioController.podcastResponse.value?.rssAudioUrl;
     if (audioUrl == null || audioUrl.isEmpty) {
       Get.snackbar("Error", "Audio not ready", backgroundColor: Colors.red, colorText: Colors.white);
       return;

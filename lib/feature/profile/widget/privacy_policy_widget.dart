@@ -119,8 +119,8 @@ class PrivacyPolicyWidget extends StatelessWidget {
             _SectionContent(
               content:
               'If you have questions about this Privacy Policy, contact us at:\n'
-                  'Email: privacy@linly.app\n'
-                  'Address: Dhaka, Bangladesh',
+                  'Email: kazisirazib7771@gmail.com\n'
+                  'Address: Sydney, Australia',
             ),
 
             SizedBox(height: 32),

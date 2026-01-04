@@ -77,10 +77,53 @@ class EditProfilePage extends StatelessWidget {
             const SizedBox(height: 30),
 
             // Save Button
-            Obx(() => SizedBox(
+            /*Obx(() => SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: controller.hasChanges ? controller.updateProfile : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: controller.hasChanges ? AppColors.primary : Colors.grey[400],
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text(
+                  'Save Changes',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            )),*/
+            Obx(() => SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: controller.hasChanges ? () async {
+                  // Trigger profile update and check if it's successful
+                  final success = await controller.updateProfile(); // Now works because updateProfile returns a Future<bool>
+
+                  // If the profile update is successful, show a success snackbar and go back
+                  if (success) {
+                    Get.snackbar(
+                      'Success', // Title of the Snackbar
+                      'Profile updated successfully!', // Message
+                      backgroundColor: Colors.green, // Snackbar background color
+                      colorText: Colors.white, // Text color of the Snackbar
+                      snackPosition: SnackPosition.BOTTOM, // Position of the Snackbar
+                      duration: const Duration(seconds: 2), // How long the Snackbar stays visible
+                    );
+
+                    // After showing the Snackbar, go back to the previous screen
+                    Get.back();
+                  } else {
+                    // Handle failure if necessary (show a different message or alert)
+                    Get.snackbar(
+                      'Error',
+                      'Profile update failed. Please try again.',
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.BOTTOM,
+                      duration: const Duration(seconds: 2),
+                    );
+                  }
+                } : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: controller.hasChanges ? AppColors.primary : Colors.grey[400],
                   padding: const EdgeInsets.symmetric(vertical: 16),

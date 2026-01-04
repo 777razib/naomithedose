@@ -59,8 +59,31 @@ class EditProfileController extends GetxController {
         lastNameCtrl.text.trim() != _originalLastName ||
         newProfileImagePath.value.isNotEmpty;
   }
+  Future<bool> updateProfile() async {
+    final first = firstNameCtrl.text.trim();
+    final last = lastNameCtrl.text.trim();
 
-  Future<void> updateProfile() async {
+    if (first.isEmpty || last.isEmpty) {
+      Get.snackbar('Error', 'Both names are required', backgroundColor: Colors.red, colorText: Colors.white);
+      return false; // Return false if validation fails
+    }
+
+    final success = await profileCtrl.editProfile(
+      firstName: first,
+      lastName: last,
+      profileImagePath: newProfileImagePath.value.isNotEmpty ? newProfileImagePath.value : null,
+    );
+
+    if (success) {
+      newProfileImagePath.value = '';
+      Get.back(); // Go back if update is successful
+      return true; // Return true if profile update is successful
+    }
+
+    return false; // Return false if update fails
+  }
+
+/*  Future<void> updateProfile() async {
     final first = firstNameCtrl.text.trim();
     final last = lastNameCtrl.text.trim();
 
@@ -79,7 +102,7 @@ class EditProfileController extends GetxController {
       newProfileImagePath.value = '';
       Get.back(); // ← ProfileScreen এ ফিরে যাবে
     }
-  }
+  }*/
 
   @override
   void onClose() {

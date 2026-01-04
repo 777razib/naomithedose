@@ -259,9 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              Get.back(); // প্রথমে AlertDialog বন্ধ
-
-              // লোডিং ডায়লগ দেখাও
+              Get.back();
               Get.dialog(
                 const Center(child: CircularProgressIndicator()),
                 barrierDismissible: false,
@@ -269,10 +267,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               final success = await controller.logout();
 
-              // লোডিং ডায়লগ বন্ধ করো (যদি থাকে)
               if (Get.isDialogOpen == true) Get.back();
 
-              // শুধু ফেল হলে snackbar — সাকসেসে কিছু না
               if (!success) {
                 Get.snackbar(
                   'Error',

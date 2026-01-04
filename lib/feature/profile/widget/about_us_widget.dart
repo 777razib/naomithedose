@@ -117,17 +117,17 @@ class AboutUsWidget extends StatelessWidget {
 
             // Team Member Card
             _buildTeamMember(
-              name: "Sarah Johnson",
-              role: "Founder & CEO",
-              imageUrl: "https://i.pravatar.cc/150?img=1",
+              name: "Foyzul Hoque",
+              role: "Lead Flutter(Android & IOS) Developer",
+              imageUrl: "https://i.postimg.cc/pdshm04b/Whats-App-Image-2026-01-04-at-12-21-17-PM.jpg",
             ),
 
             const SizedBox(height: 12),
 
             _buildTeamMember(
-              name: "Michael Chen",
-              role: "Lead Developer",
-              imageUrl: "https://i.pravatar.cc/150?img=5",
+              name: "Kazi S.I. Razib",
+              role: "Junior Flutter(Android & IOS) Developer",
+              imageUrl: "https://i.postimg.cc/G37QWKmG/Whats-App-Image-2026-01-04-at-12-19-50-PM.jpg",
             ),
 
             const SizedBox(height: 32),
@@ -150,7 +150,7 @@ class AboutUsWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Made with ❤️ in Bangladesh",
+                    "Made with ❤️ in Australia",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade500,

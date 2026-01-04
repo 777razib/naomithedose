@@ -558,16 +558,17 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                         children: [
                                           Expanded(
                                             child: Obx(() {
-                                              final durSec = audioController.duration.value.inSeconds;
-                                              final posSec = audioController.position.value.inSeconds;
-                                              final progress = durSec > 0 ? (posSec / durSec).clamp(0.0, 1.0) : 0.0;
+                                              // Reactive variables directly use করো – কোনো calculation করো না যা non-reactive করে
+                                              final duration = audioController.duration.value;
+                                              final position = audioController.position.value;
 
-                                              // Calculate index based on the progress
-                                              int index = (progress * features.length).floor().clamp(0, features.length - 1);
+                                              // এখানে inSeconds দিয়ে calculation করলেও duration ও position reactive থাকায় Obx rebuild করবে
+                                              final progress = duration.inSeconds > 0
+                                                  ? (position.inSeconds / duration.inSeconds).clamp(0.0, 1.0)
+                                                  : 0.0;
 
-                                              // Log the index and progress to debug
-                                              print('Progress: $progress');
-                                              print('Index calculated: $index');
+                                              // Debug print রাখো দেখার জন্য
+                                              print('Progress: $progress | Index: ${(progress * features.length).floor()}');
 
                                               return FeaturesSpotlight(
                                                 features: features,

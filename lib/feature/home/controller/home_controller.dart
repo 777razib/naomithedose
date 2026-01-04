@@ -1,3 +1,4 @@
+/*
 // lib/app/modules/home/controller/home_controller.dart
 
 import 'package:get/get.dart';
@@ -119,4 +120,4 @@ class HomeController extends GetxController {
     isLoading.value = false;
     isLoadingMore.value = false;
   }
-}
+}*/

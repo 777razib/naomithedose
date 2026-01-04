@@ -1,83 +1,60 @@
+// widget/feature_item_widget.dart (or wherever you keep it)
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-class FeaturesSpotlight extends StatefulWidget {
+class FeaturesSpotlight extends StatelessWidget {
   final List<String> features;
+  final double progress; // 0.0 to 1.0 (from audio progress)
 
   const FeaturesSpotlight({
     Key? key,
     required this.features,
+    required this.progress,
   }) : super(key: key);
 
   @override
-  State<FeaturesSpotlight> createState() => _FeaturesSpotlightState();
-}
-
-class _FeaturesSpotlightState extends State<FeaturesSpotlight>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  int currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
-    _controller.forward();
-
-    Future.delayed(const Duration(milliseconds: 1500), _nextFeature);
-  }
-
-  void _nextFeature() {
-    if (!mounted) return;
-
-    // fade out
-    _controller.reverse().then((_) {
-      if (!mounted) return;
-
-      setState(() {
-        currentIndex = (currentIndex + 1) % widget.features.length;
-      });
-
-      // fade in পরেরটা
-      _controller.forward();
-
-      // আবার 1.5 সেকেন্ড পর কল করো (লুপ)
-      Future.delayed(const Duration(milliseconds: 1500), _nextFeature);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
+    // Calculate the index based on the progress
+    int index = (progress * features.length).floor().clamp(0, features.length - 1);
+
+    // Debug print to ensure the index is updating correctly
+    print('Index: $index, Progress: $progress');
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(scale: animation, child: child),
+        );
+      },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        key: ValueKey<int>(index), // Important for AnimatedSwitcher to detect changes
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle, size: 20, color: Colors.green),
-            const SizedBox(width: 12),
-            Text(
-              widget.features[currentIndex],
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            Icon(
+              Icons.auto_awesome,
+              size: 24,
+              color: Colors.orangeAccent.shade700,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                features[index], // Ensure this updates as the index changes
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
               ),
+            ),
+            Icon(
+              Icons.auto_awesome,
+              size: 24,
+              color: Colors.orangeAccent.shade700,
             ),
           ],
         ),
@@ -85,3 +62,4 @@ class _FeaturesSpotlightState extends State<FeaturesSpotlight>
     );
   }
 }
+

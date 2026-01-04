@@ -10,6 +10,7 @@ class SharedPreferencesHelper {
 
   static const String _userTypeKey = 'userType';
   static const String _userIdKey = 'userId';
+  static const String _userQueryKey = 'query';
   static const String _userEmailKey = 'userEmail';
   static const String _userSummaryKey = 'audio_summary'; // Clear & descriptive
   static const String _pickerLocationUuidKey = 'pickerLocationUuid';
@@ -31,13 +32,28 @@ class SharedPreferencesHelper {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userIdKey, id);
   }
-
   static Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userIdKey);
   }
+  // ------------MARK: - User Query----------------------------------
+  static Future<void> saveUserQuery(String query) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userQueryKey, query);
+  }
 
-  // MARK: - User Email
+  static Future<String?> getUserQuery() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userQueryKey);
+  }
+  static Future<void> clearQuery() async {
+    final prefs = await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.remove(_userQueryKey),
+    ]);
+  }
+
+  // ----------------------MARK: - User Email-----------------
   static Future<void> saveUserEmail(String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userEmailKey, email);
@@ -48,7 +64,7 @@ class SharedPreferencesHelper {
     return prefs.getString(_userEmailKey);
   }
 
-  // MARK: - User Type
+  // --------------------MARK: - User Type-----------------------
   static Future<void> saveUserType(String userType) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userTypeKey, userType);
@@ -59,7 +75,7 @@ class SharedPreferencesHelper {
     return prefs.getString(_userTypeKey);
   }
 
-  // MARK: - Audio Summary (String version - simple & fast)
+  // -------------MARK: - Audio Summary (String version - simple & fast)------------
   static Future<void> saveAudioSummary(String summary) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userSummaryKey, summary);
@@ -74,7 +90,7 @@ class SharedPreferencesHelper {
   /// Sync getter (if you have a sync wrapper elsewhere)
   // static String? getAudioSummary() => SharedPrefs.instance.getString(_userSummaryKey);
 
-  // MARK: - Optional: Save full PodcastTranscriptModel as JSON
+  // ------------MARK: - Optional: Save full PodcastTranscriptModel as JSON------------------
   static Future<void> saveAudioSummaryModel(PodcastTranscriptModel model) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = jsonEncode(model.toJson());
@@ -94,7 +110,7 @@ class SharedPreferencesHelper {
     }
   }
 
-  // MARK: - Picker Location
+  //------------------------ MARK: - Picker Location-------------------
   static Future<void> savePickerLocationUuid(String uuid) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_pickerLocationUuidKey, uuid);
@@ -105,13 +121,13 @@ class SharedPreferencesHelper {
     return prefs.getString(_pickerLocationUuidKey);
   }
 
-  // MARK: - Login Status
+  //--------------- MARK: - Login Status------------------
   static Future<bool> checkLogin() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_isLoginKey) ?? false;
   }
 
-  // MARK: - Clear Methods
+  //------------- MARK: - Clear Methods--------------
   static Future<void> clearAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
@@ -133,6 +149,7 @@ class SharedPreferencesHelper {
       prefs.remove(_userSummaryKey),
       prefs.remove(_isLoginKey),
       prefs.remove(_pickerLocationUuidKey),
+      prefs.remove(_userQueryKey),
     ]);
   }
 }

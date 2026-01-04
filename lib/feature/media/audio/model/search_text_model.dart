@@ -75,6 +75,7 @@ class TopicSummaryModel {
 // lib/feature/media/model/transcription_result_model.dart
 
 
+/*
 class TranscriptionResult {
   final String? jobId;
   final String? url;
@@ -131,6 +132,48 @@ class TranscriptionResult {
       'topic_mention_count': topicMentionCount,
       'created_at': createdAt?.toIso8601String(),
       'completed_at': completedAt?.toIso8601String(),
+    };
+  }
+
+  @override
+  String toString() => jsonEncode(toJson());
+}*/
+
+
+
+class TranscriptionResult {
+  final String? jobId;
+  final String? status;
+  final String? summary;           // might be used elsewhere
+  final String? error;
+  //final String? combinedSummary;   // <-- THIS IS THE MISSING FIELD
+
+  TranscriptionResult({
+    this.jobId,
+    this.status,
+    this.summary,
+    this.error,
+    //this.combinedSummary,
+  });
+
+  factory TranscriptionResult.fromJson(Map<String, dynamic> json) {
+    return TranscriptionResult(
+      jobId: json['job_id'] as String?,
+      status: json['status'] as String?,
+      summary: json['summary'] as String?,
+      error: json['error'] as String?,
+      // Support both snake_case and camelCase from API
+     // combinedSummary: json['combined_summary'] as String? ?? json['combinedSummary'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'job_id': jobId,
+      'status': status,
+      'summary': summary,
+      'error': error,
+      //'combined_summary': combinedSummary,
     };
   }
 

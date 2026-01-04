@@ -2,7 +2,9 @@
 
 class Urls {
   // ==================== BASE URL ====================
-  static const String _baseUrl = 'http://204.197.173.4:8033';
+  //static const String _baseUrl = 'http://204.197.173.4:8033';
+  //new
+  static const String _baseUrl = 'http://204.197.173.4:8034';
 
   // ==================== AUTH ====================
 
@@ -29,7 +31,7 @@ class Urls {
   }
   static String searchingTexts(String id){
     final encoded=Uri.encodeComponent(id);
-    return '$_baseUrl/podcast/transcription/$encoded';
+    return '$_baseUrl/episodes/transcribe/$encoded';
   }
 // network_path.dart
   static String audioSummary(String audioUrl) {
@@ -39,7 +41,18 @@ class Urls {
 
 // lib/core/network_path/network_path.dart
 
+  //new 2
+
   static String playPodcastEpisode({
+    required String podcastUrl,
+    required String topic,
+  }) {
+    final encodedUrl = Uri.encodeQueryComponent(podcastUrl.trim());
+    final encodedTopic = Uri.encodeQueryComponent(topic.trim());
+    return '$_baseUrl/episodes/?url=$encodedUrl&topic=$encodedTopic';
+  }
+
+  /*static String playPodcastEpisode({
     required String podcastUrl,  // Apple Podcasts URL বা যেকোনো podcast link
     required String topic,        // যে টপিকে ট্রান্সক্রিপশন চাও (যেমন: "motivation")
   }) {
@@ -63,9 +76,9 @@ class Urls {
         '&len_max=120'
         '&offset=$offset'
         '&limit=$pageSize';
-  }
+  }*/
 
-  static String quickPopularTopic({
+ /* static String quickPopularTopic({
     required String topic,      // ← topic, not interest
     int page = 1,
     int pageSize = 10,
@@ -77,6 +90,19 @@ class Urls {
         'q=$q'
         '&page_size=$pageSize'
         '&use_ai=true';
+  }*/
+
+  //new 1
+  static String quickPopularTopic({
+    required String topic,
+    int page = 1,
+    int limit = 10,
+  }) {
+    final q = Uri.encodeQueryComponent(topic.trim());
+    return '$_baseUrl/search?'
+        'q=$q'
+        '&limit=$limit'
+        '&page=$page';
   }
   /// Builds the API URL for the home/feed screen
   /// - If [interest] is null, empty, or whitespace → returns popular podcasts

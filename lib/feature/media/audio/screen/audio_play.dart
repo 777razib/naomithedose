@@ -549,43 +549,33 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                     ),
                                     elevation: 10,
                                     color: Colors.orangeAccent,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                        vertical: 16,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Obx(() {
-                                              final durSec = audioController.duration.value.inSeconds;
-                                              final posSec = audioController.position.value.inSeconds;
-                                              final progress = durSec > 0 ? (posSec / durSec).clamp(0.0, 1.0) : 0.0;
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Obx(() {
+                                            final duration = audioController.duration.value;
+                                            final position = audioController.position.value;
 
-                                              // Calculate index based on the progress
-                                              int index = (progress * features.length).floor().clamp(0, features.length - 1);
+                                            final progress = duration.inSeconds > 0
+                                                ? (position.inSeconds / duration.inSeconds).clamp(0.0, 1.0)
+                                                : 0.0;
+                                            print('Progress: $progress | Index: ${(progress * features.length).floor()}');
 
-                                              // Log the index and progress to debug
-                                              print('Progress: $progress');
-                                              print('Index calculated: $index');
-
-                                              return FeaturesSpotlight(
-                                                features: features,
-                                                progress: progress,
-                                              );
-                                            }),
-                                          ),
-
-                                          const SizedBox(width: 10),
-                                          Lottie.asset(
-                                            "assets/lottie_json/loading_lottie.json",
-                                            width: 100,
-                                            height: 100,
-                                            repeat: true,
-                                            animate: true,
-                                          ),
-                                        ],
-                                      ),
+                                            return FeaturesSpotlight(
+                                              features: features,
+                                              progress: progress,
+                                            );
+                                          }),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Lottie.asset(
+                                          "assets/lottie_json/loading_lottie.json",
+                                          width: 100,
+                                          height: 100,
+                                          repeat: true,
+                                          animate: true,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),

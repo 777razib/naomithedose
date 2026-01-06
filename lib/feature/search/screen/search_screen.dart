@@ -8,6 +8,7 @@ import '../controller/searching_api_controller.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -17,14 +18,13 @@ class _SearchScreenState extends State<SearchScreen> {
   final SearchingApiController apiCtrl = Get.put(SearchingApiController());
   bool isListView = true;
 
-  // ✅ Only this value controls what is shown/searched
+  // Only this value controls what is shown/searched
   String _submittedQuery = "";
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ No API call here. Only clear results when user edits away from submitted query.
     _searchController.addListener(() {
       final typed = _searchController.text.trim();
 
@@ -53,10 +53,9 @@ class _SearchScreenState extends State<SearchScreen> {
     final q = query.trim();
     if (q.isEmpty) return;
 
-    FocusScope.of(context).unfocus(); // optional: hide keyboard
-
+    FocusScope.of(context).unfocus(); // Hide keyboard
     setState(() {
-      _submittedQuery = q; // ✅ commit query only here
+      _submittedQuery = q; // Commit query only here
     });
 
     await apiCtrl.searchingApiMethod(interest: q);
@@ -98,20 +97,14 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
-
-                        // ✅ Only Enter triggers search
                         onSubmitted: (v) => _submitSearch(v),
-
                         decoration: InputDecoration(
                           hintText: "Search podcasts…",
                           hintStyle: TextStyle(color: Colors.grey.shade600),
-
-                          // ✅ Only button click triggers search
                           prefixIcon: IconButton(
-                            icon: Icon(Icons.search, color: AppColors.primary),
+                            icon: const Icon(Icons.search, color: AppColors.primary),
                             onPressed: () => _submitSearch(_searchController.text),
                           ),
-
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -174,22 +167,29 @@ class _SearchScreenState extends State<SearchScreen> {
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: Obx(() {
-                  // ✅ UI depends on submitted query only (not typed text)
                   final query = _submittedQuery;
 
+                  // Loading state (only when no data yet)
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
+                  // Error state - NOW SHOWS ACTUAL ERROR MESSAGE
                   if (apiCtrl.errorMessage.isNotEmpty) {
                     return _buildErrorWidget();
                   }
+
+                  // No query submitted yet
                   if (query.isEmpty) {
                     return const SizedBox.shrink();
                   }
+
+                  // No results found
                   if (apiCtrl.episodes.isEmpty) {
                     return _buildNoResultsWidget(query);
                   }
 
+                  // Show results
                   return isListView ? _buildListView() : _buildGridView();
                 }),
               ),
@@ -200,17 +200,39 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // बाकी সব একই থাকবে ↓↓↓
-
+  // IMPROVED: Shows the actual error from the controller
   Widget _buildErrorWidget() => Center(
     child: ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      children: const [
-        SizedBox(height: 100),
-        Icon(Icons.wifi_off, size: 64, color: Colors.grey),
-        SizedBox(height: 16),
-        Text("No internet connection", textAlign: TextAlign.center),
-        Text("Pull down to retry", style: TextStyle(color: Colors.grey)),
+      children: [
+        const SizedBox(height: 100),
+        Icon(
+          apiCtrl.errorMessage.value.toLowerCase().contains('internet') ||
+              apiCtrl.errorMessage.value.toLowerCase().contains('network') ||
+              apiCtrl.errorMessage.value.toLowerCase().contains('socket') ||
+              apiCtrl.errorMessage.value.toLowerCase().contains('timeout')
+              ? Icons.wifi_off
+              : Icons.error_outline,
+          size: 64,
+          color: Colors.grey,
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            apiCtrl.errorMessage.value.isNotEmpty
+                ? apiCtrl.errorMessage.value
+                : "Something went wrong",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          "Pull down to retry",
+          style: TextStyle(color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
       ],
     ),
   );
@@ -222,7 +244,10 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(height: 100),
         const Icon(Icons.search_off, size: 64, color: Colors.grey),
         const SizedBox(height: 16),
-        Text('"$query"', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+        Text(
+          '"$query"',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+        ),
         const Text("No results found", style: TextStyle(color: Colors.grey)),
         const Text("Try different keywords", style: TextStyle(color: Colors.grey)),
       ],
@@ -240,7 +265,9 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Center(child: CircularProgressIndicator()),
         );
       }
+
       final e = apiCtrl.episodes[i];
+
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: AudioImageWidget(
@@ -248,10 +275,10 @@ class _SearchScreenState extends State<SearchScreen> {
           subTitle: e.artist ?? e.podcastName ?? "Unknown Show",
           date: e.releaseDate != null ? _formatDate(e.releaseDate!) : "Unknown",
           episodes: e.podcastName ?? "",
-          imageUrl: e.imageUrl?.isNotEmpty == true ? e.imageUrl! : "https://via.placeholder.com/300",
+          imageUrl: e.imageUrl?.isNotEmpty == true
+              ? e.imageUrl!
+              : "https://via.placeholder.com/300",
           onTap: () {
-            debugPrint("++**list********+++Urls---:${e.url}");
-            debugPrint("+++***list******++topic---:${e.topic}");
             if (e.url != null && e.url!.isNotEmpty) {
               Get.to(() => MusicPlayerScreen(
                 episodeUrls: [e.url!],
@@ -278,25 +305,21 @@ class _SearchScreenState extends State<SearchScreen> {
         apiCtrl.loadNextPage();
         return const Center(child: CircularProgressIndicator());
       }
+
       final e = apiCtrl.episodes[i];
-      final ee=apiCtrl.searchResult;
-      debugPrint("++++++++topic+++++++${e?.topic}");
 
       return AudioImageWidget(
         title: e.title ?? e.podcastName ?? "Unknown Episode",
         subTitle: e.artist ?? e.podcastName ?? "Unknown Show",
         date: e.releaseDate != null ? _formatDate(e.releaseDate!) : "Unknown",
         episodes: e.podcastName ?? "",
-        imageUrl: e.imageUrl?.isNotEmpty == true ? e.imageUrl! : "https://via.placeholder.com/300",
+        imageUrl: e.imageUrl?.isNotEmpty == true
+            ? e.imageUrl!
+            : "https://via.placeholder.com/300",
         onTap: () {
-          debugPrint("++*****Grid*****+++Urls---:${e.url}");
-          debugPrint("+++*****Grid****++topic---:${e.topic}");
           if (e.url != null && e.url!.isNotEmpty) {
-            debugPrint("+++++Urls---:${e.url}");
-            debugPrint("+++++topic---:${e.topic}");
             Get.to(() => MusicPlayerScreen(
-              episodeUrls: [e.url],
-              //currentTopic: ee?.query??"",
+              episodeUrls: [e.url!],
               currentTopic: e.topic ?? "",
             ));
           }
@@ -305,4 +328,3 @@ class _SearchScreenState extends State<SearchScreen> {
     },
   );
 }
-

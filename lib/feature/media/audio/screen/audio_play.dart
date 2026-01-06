@@ -558,16 +558,12 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                         children: [
                                           Expanded(
                                             child: Obx(() {
-                                              // Reactive variables directly use করো – কোনো calculation করো না যা non-reactive করে
                                               final duration = audioController.duration.value;
                                               final position = audioController.position.value;
 
-                                              // এখানে inSeconds দিয়ে calculation করলেও duration ও position reactive থাকায় Obx rebuild করবে
                                               final progress = duration.inSeconds > 0
                                                   ? (position.inSeconds / duration.inSeconds).clamp(0.0, 1.0)
                                                   : 0.0;
-
-                                              // Debug print রাখো দেখার জন্য
                                               print('Progress: $progress | Index: ${(progress * features.length).floor()}');
 
                                               return FeaturesSpotlight(
@@ -576,7 +572,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                               );
                                             }),
                                           ),
-
                                           const SizedBox(width: 10),
                                           Lottie.asset(
                                             "assets/lottie_json/loading_lottie.json",

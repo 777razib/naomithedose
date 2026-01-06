@@ -39,12 +39,12 @@ class FeaturesSpotlight extends StatelessWidget {
               size: 24,
               color: Colors.orangeAccent.shade700,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 features[index], // Ensure this updates as the index changes
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),

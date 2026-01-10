@@ -261,19 +261,23 @@ class _SearchScreenState extends State<SearchScreen> {
   );
 
   Widget _buildNoResultsWidget(String query) => Center(
-    child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 100),
-        const Icon(Icons.search_off, size: 64, color: Colors.grey),
-        const SizedBox(height: 16),
-        Text(
-          '"$query"',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-        ),
-        const Text("No results found", style: TextStyle(color: Colors.grey)),
-        const Text("Try different keywords", style: TextStyle(color: Colors.grey)),
-      ],
+    child: Align(
+      alignment: Alignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+       // physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 100),
+          const Icon(Icons.search_off, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            '"$query"',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+          ),
+          const Text("No results found", style: TextStyle(color: Colors.grey)),
+          const Text("Try different keywords and hit enter", style: TextStyle(color: Colors.grey)),
+        ],
+      ),
     ),
   );
 

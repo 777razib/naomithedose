@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import '../../../core/app_colors.dart';
 import '../../home/widget/audio_image_widget.dart';
 import '../../media/audio/screen/audio_play.dart';
@@ -67,12 +68,28 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  String _formatDate(String isoDate) {
-    try {
-      return DateFormat('MMM dd, yyyy').format(DateTime.parse(isoDate));
-    } catch (e) {
+
+  String _formatDate(String? rawDate) {
+    if (rawDate == null || rawDate.trim().isEmpty) {
       return "Unknown date";
     }
+
+    final trimmed = rawDate.trim();
+
+    // সবচেয়ে কমন RSS ফরম্যাট → প্রথমে এটা চেষ্টা
+    try {
+      final date = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US').parse(trimmed);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (_) {}
+
+    // যদি ভবিষ্যতে ISO ফরম্যাট আসে
+    try {
+      final date = DateTime.parse(trimmed);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (_) {}
+
+    // সব ফেল করলে
+    return "Unknown date";
   }
 
   @override
@@ -171,10 +188,16 @@ class _SearchScreenState extends State<SearchScreen> {
 
                   // Loading state (only when no data yet)
                   if (apiCtrl.isLoading.value && apiCtrl.episodes.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
+                    return  Center(child: Lottie.asset(
+                      "assets/lottie_json/loading_lottie.json",
+                      width: 100,
+                      height: 100,
+                      repeat: true,
+                      animate: true,
+                    ),);
                   }
 
-                  // Error state - NOW SHOWS ACTUAL ERROR MESSAGE
+                  // Error state - shows actual error message
                   if (apiCtrl.errorMessage.isNotEmpty) {
                     return _buildErrorWidget();
                   }
@@ -200,7 +223,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // IMPROVED: Shows the actual error from the controller
+  // Shows the actual error from the controller
   Widget _buildErrorWidget() => Center(
     child: ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -254,12 +277,16 @@ class _SearchScreenState extends State<SearchScreen> {
     ),
   );
 
+  // FIXED: Safe pagination for ListView
   Widget _buildListView() => ListView.builder(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     itemCount: apiCtrl.episodes.length + (apiCtrl.hasMore.value ? 1 : 0),
     itemBuilder: (context, i) {
-      if (i == apiCtrl.episodes.length) {
-        apiCtrl.loadNextPage();
+      // Trigger load more only when reaching the last item
+      if (i == apiCtrl.episodes.length && apiCtrl.hasMore.value) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          apiCtrl.loadNextPage();
+        });
         return const Padding(
           padding: EdgeInsets.all(20),
           child: Center(child: CircularProgressIndicator()),
@@ -291,6 +318,7 @@ class _SearchScreenState extends State<SearchScreen> {
     },
   );
 
+  // FIXED: Safe pagination for GridView (this was causing the SliverGrid crash)
   Widget _buildGridView() => GridView.builder(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -301,8 +329,11 @@ class _SearchScreenState extends State<SearchScreen> {
     ),
     itemCount: apiCtrl.episodes.length + (apiCtrl.hasMore.value ? 1 : 0),
     itemBuilder: (context, i) {
-      if (i == apiCtrl.episodes.length) {
-        apiCtrl.loadNextPage();
+      // Trigger load more only when reaching the last item
+      if (i == apiCtrl.episodes.length && apiCtrl.hasMore.value) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          apiCtrl.loadNextPage();
+        });
         return const Center(child: CircularProgressIndicator());
       }
 

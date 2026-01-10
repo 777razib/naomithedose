@@ -131,9 +131,15 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       // Loading Indicator
                       Obx(
                         () => audioController.isLoading.value
-                            ? const Padding(
+                            ?  Padding(
                                 padding: EdgeInsets.all(20),
-                                child: CircularProgressIndicator(color: kTeal),
+                                child: Lottie.asset(
+                                  "assets/lottie_json/loading_lottie.json",
+                                  width: 100,
+                                  height: 100,
+                                  repeat: true,
+                                  animate: true,
+                                ),
                               )
                             : const SizedBox(),
                       ),
@@ -171,9 +177,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                 ? child
                                 : Container(
                                     color: kTeal.withOpacity(0.1),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color: kTeal,
+                                    child:  Center(
+                                      child:Lottie.asset(
+                                        "assets/lottie_json/loading_lottie.json",
+                                        width: 100,
+                                        height: 100,
+                                        repeat: true,
+                                        animate: true,
                                       ),
                                     ),
                                   ),
@@ -425,7 +435,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                             ),
 
                             // Menu Icon Button
-                            IconButton(
+                            /*IconButton(
                               onPressed: _summaryApiMethod,
                               icon: Image.asset(
                                 'assets/icons/menu.png',
@@ -433,7 +443,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                 height: 26,
                                 color: kTeal,
                               ),
-                            ),
+                            ),*/
                           ],
                         ),
                       ),

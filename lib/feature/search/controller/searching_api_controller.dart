@@ -5,13 +5,15 @@ import '../../../core/network_caller/network_config.dart';
 import '../../../core/network_path/natwork_path.dart';
 import '../model/searching_model.dart';
 
-/*class SearchingApiController extends GetxController {
+class SearchingApiController extends GetxController {
+  SearchResult? searchResult;
   final RxList<Episode> episodes = <Episode>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
   final RxString errorMessage = ''.obs;
   final RxInt currentPage = 1.obs;
-  final int pageSize = 10;
+
+  final int limit = 10;
 
   String? _currentQuery;
 
@@ -40,14 +42,22 @@ import '../model/searching_model.dart';
       final String url = Urls.quickPopularTopic(
         topic: _currentQuery!,
         page: currentPage.value,
-        page: pageSize,
+        limit: limit,
       );
+      print('Fetching URL: $url');  // ← Add this for debugging: Check if page changes in logs
 
       final NetworkResponse response = await NetworkCall.getRequest(url: url);
+      print("--------code-----------${response.statusCode}");
+      print("---------data----------${response.responseData}");
+
+
 
       if (response.isSuccess && response.responseData != null) {
         final model = SearchResult.fromJson(response.responseData!);
         final newEpisodes = model.episodes ?? [];
+
+        var ss = _currentQuery;
+        SharedPreferencesHelper.saveUserQuery("$ss");
 
         if (loadMore) {
           episodes.addAll(newEpisodes);
@@ -55,7 +65,7 @@ import '../model/searching_model.dart';
           episodes.assignAll(newEpisodes);
         }
 
-        hasMore.value = newEpisodes.length >= pageSize;
+        hasMore.value = newEpisodes.length >= limit;
       } else {
         errorMessage.value = response.errorMessage ?? 'Failed to load results';
         hasMore.value = false;
@@ -69,7 +79,7 @@ import '../model/searching_model.dart';
   }
 
   void loadNextPage() {
-    if (hasMore.value && !isLoading.value && _currentQuery != null) {
+    if (hasMore.value && !isLoading.value && _currentQuery != null && _currentQuery!.isNotEmpty) {
       currentPage.value++;
       searchingApiMethod(interest: _currentQuery, loadMore: true);
     }
@@ -89,7 +99,8 @@ import '../model/searching_model.dart';
     currentPage.value = 1;
     _currentQuery = null;
   }
-}*/
+}
+/*
 class SearchingApiController extends GetxController {
   SearchResult? searchResult;
   final RxList<Episode> episodes = <Episode>[].obs;
@@ -180,4 +191,4 @@ class SearchingApiController extends GetxController {
     currentPage.value = 1;
     _currentQuery = null;
   }
-}
+}*/

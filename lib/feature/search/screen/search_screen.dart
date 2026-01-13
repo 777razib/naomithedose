@@ -677,7 +677,7 @@ void aaa(){
       final e = apiCtrl.episodes[i];
 
        print("---------title----------${e.title}");
-       print("---------title----------${e.url}");
+       print("---------rssAudioUrl----------${e.rssAudioUrl}");
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: AudioImageWidget(
@@ -689,9 +689,11 @@ void aaa(){
               ? e.imageUrl!
               : "https://via.placeholder.com/300",
           onTap: () {
-            if (e.url != null && e.url!.isNotEmpty) {
+            if (e.rssAudioUrl != null && e.rssAudioUrl!.isNotEmpty) {
+              print("--rssAudioUrl------${e.rssAudioUrl}");
+
               Get.to(() => MusicPlayerScreen(
-                episodeUrls: [e.url!],
+                episodeUrls: [e.rssAudioUrl!],
                 currentTopic: e.topic ?? "",
               ));
             }
@@ -728,9 +730,10 @@ void aaa(){
             ? e.imageUrl!
             : "https://via.placeholder.com/300",
         onTap: () {
-          if (e.url != null && e.url!.isNotEmpty) {
+          if (e.rssAudioUrl != null && e.rssAudioUrl!.isNotEmpty) {
+            print("--rssAudioUrl------${e.rssAudioUrl}");
             Get.to(() => MusicPlayerScreen(
-              episodeUrls: [e.url!],
+              episodeUrls: [e.rssAudioUrl!],
               currentTopic: e.topic ?? "",
             ));
           }

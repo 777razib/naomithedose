@@ -59,6 +59,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     if (urls.isNotEmpty) {
       currentIndex = 0;
       currentUrl = urls.first;
+      print('---------audio play--rssAudioUrl--------------${urls.first}');
+      print('---------audio play--topic--------------${topic}');
+
       _loadEpisode(currentUrl, topic);
     } else if (widget.Id != null && widget.Id!.isNotEmpty) {
       currentUrl = widget.Id!;
@@ -82,7 +85,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  Future<void> _playNext() async {
+/*  Future<void> _playNext() async {
     final urls = widget.episodeUrls ?? [];
     final topic = widget.currentTopic ?? '';
 
@@ -98,7 +101,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     if (urls.isEmpty || currentIndex <= 0) return;
     currentIndex--;
     await _loadEpisode(urls[currentIndex], topic);
-  }
+  }*/
 
   String _format(int seconds) {
     final m = seconds ~/ 60;
@@ -434,16 +437,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                               }),
                             ),
 
-                            // Menu Icon Button
-                            /*IconButton(
-                              onPressed: _summaryApiMethod,
-                              icon: Image.asset(
-                                'assets/icons/menu.png',
-                                width: 26,
-                                height: 26,
-                                color: kTeal,
-                              ),
-                            ),*/
                           ],
                         ),
                       ),

@@ -49,7 +49,7 @@ class Urls {
   }) {
     final encodedUrl = Uri.encodeQueryComponent(podcastUrl.trim());
     final encodedTopic = Uri.encodeQueryComponent(topic.trim());
-    return '$_baseUrl/episodes/?url=$encodedUrl&topic=$encodedTopic';
+    return '$_baseUrl/episodes/?rss_audio_url=$encodedUrl&topic=$encodedTopic';
   }
 
   /*static String playPodcastEpisode({
